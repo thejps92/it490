@@ -6,13 +6,13 @@ use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
 
 // RabbitMQ connection parameters
-$rabbitmqHost = '10.0.2.11';
+$rabbitmqHost = '10.147.18.28';
 $rabbitmqPort = 5672;
-$rabbitmqUser = 'testUser';
-$rabbitmqPassword = '123';
-$rabbitmqVHost = 'testHost';
-$rabbitmqMainQueue = 'testQueue';
-$rabbitmqReplyQueue = 'rQueue';
+$rabbitmqUser = 'rmqsUser';
+$rabbitmqPassword = 'Password123';
+$rabbitmqVHost = 'rmqsVHost';
+$rabbitmqMainQueue = 'signInQueue';
+$rabbitmqReplyQueue = 'replySignInQueue';
 
 // User input from the form
 $username = $_POST['username'];
