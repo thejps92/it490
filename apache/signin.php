@@ -7,7 +7,7 @@
 </head>
 <body>
     <h2>Sign In</h2>
-    <form action="process_signin.php" method="post">
+    <form action="publish_signin.php" method="post">
         <label for="username">Username:</label>
         <input type="text" id="username" name="username" required>
         <br><br>
