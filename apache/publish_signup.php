@@ -11,12 +11,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'];
 
     // RabbitMQ connection parameters
-    $rabbitmqHost = '10.0.2.11';
+    $rabbitmqHost = '10.147.18.28';
     $rabbitmqPort = '5672';
-    $rabbitmqUser = 'testUser';
-    $rabbitmqPass = '123';
-    $rabbitmqVHost = 'testHost';
-    $rabbitmqMainQueue = 'testQueue';
+    $rabbitmqUser = 'rmqsUser';
+    $rabbitmqPass = 'Password123';
+    $rabbitmqVHost = 'rmqsVHost';
+    $rabbitmqMainQueue = 'signUpQueue';
 
     // Establish RabbitMQ connection
     $connection = new AMQPStreamConnection($rabbitmqHost, $rabbitmqPort, $rabbitmqUser, $rabbitmqPass, $rabbitmqVHost);
