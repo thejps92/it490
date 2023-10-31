@@ -11,6 +11,27 @@ require_once(__DIR__ . "/../lib/db.php");
 
 use Project\db;
 
+$apiUrl = 'http://www.omdbapi.com/?apikey=8d92d6cb&s=search_term'; 
+$db = new db();
+
+// Make an API request and retrieve data
+$apiResponse = file_get_contents($apiUrl);
+$apiData = json_decode($apiResponse, true);
+
+// Check if the API response is valid and contains data
+if ($apiData !== null && isset($apiData['Search'])) {
+    // Iterate through the API data and insert it into the database
+    foreach ($apiData['Search'] as $movie) {
+        $title = $movie['Title'];
+        $year = $movie['Year'];
+        $genre = $movie['Genre'];
+
+        // Insert the data into the database
+        $db->insertMovieData($title, $year, $genre);
+    }
+} else {
+    echo "API data is not valid or does not contain the expected structure.";
+}
 $count = 0;
 try {
     foreach (glob(__DIR__ . "/*.sql") as $filename) {
