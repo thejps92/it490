@@ -17,7 +17,7 @@ $rabbitmqMainQueue = 'signUpQueue';
 $mysqlHost = '127.0.0.1';
 $mysqlUser = 'root';
 $mysqlPassword = 'root';
-$mysqlDatabase = 'testDB';
+$mysqlDatabase = 'Project';
 $mysqlTable = 'user_credentials';
 
 // Establish RabbitMQ connection

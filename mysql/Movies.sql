@@ -1,3 +1,3 @@
-CREATE TABLE MOVIES(movie_id INT(10) NOT NULL AUTO_INCREMENT, movie_name VARCHAR(100) NOT NULL, year INT(4) NOT NULL
-, duration INT(3) NOT NULL, movie_rating VARCHAR(4) NOT NULL, viewer_rating DECIMAL(2,1), PRIMARY KEY(Movie_id)); 
+CREATE TABLE MOVIES(movie_id INT(10) NOT NULL AUTO_INCREMENT, movie_name VARCHAR(100) NOT NULL, year INT(4) NOT NULL,
+director_id INT(5) AUTO_INCREMENT,  director_name VARCHAR(100) NOT NULL, PRIMARY KEY(Movie_id)); 
 
