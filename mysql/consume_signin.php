@@ -15,7 +15,7 @@ $rabbitmqMainQueue = 'signInQueue';
 // MySQL connection parameters
 $mysqlIP = '127.0.0.1';
 $mysqlUsername = 'root';
-$mysqlPassword = 'root';
+$mysqlPassword = 'random490';
 $mysqlDatabase = 'newdb';
 $mysqlTable = 'Users';
 $mysqlMoviesTable = 'movies';
@@ -27,7 +27,7 @@ $channel->queue_declare($rabbitmqMainQueue, false, true, false, false);
 echo "Waiting for messages. To exit, press Ctrl+C\n";
 
 // Callback function
-$callback = function ($message) use ($channel, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable) {
+$callback = function ($message) use ($channel, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable, $mysqlMoviesTable) {
     $signinData = json_decode($message->body, true);
     
     // Set the username and password variables
@@ -39,7 +39,7 @@ $callback = function ($message) use ($channel, $mysqlIP, $mysqlUsername, $mysqlP
         $userInfo = validateUser($username, $password, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable);
         if ($userInfo !== false) {
             // If the username and password are valid in the database, publish a "GOOD" message to RabbitMQ
-            $movies = getTop10Movies($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $movieTable);
+            $movies = getTop10Movies($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlMoviesTable);
 
             if ($movies !== false) {
                 $response = [
@@ -114,7 +114,7 @@ function validateUser($username, $password, $mysqlIP, $mysqlUsername, $mysqlPass
     return false;
 }
 
-function getTop10Movies($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $movieTable) {
+function getTop10Movies($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlMoviesTable) {
     // Establish MySQL connection and retrieve the user's favorite genre
     $mysqli = new mysqli($mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
 
@@ -133,7 +133,7 @@ function getTop10Movies($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $my
         $result->free();
 
         // Use the retrieved favGenre to query for top 10 movies
-        $query = "SELECT title FROM $movieTable WHERE genre LIKE '%$favGenre%' LIMIT 10";
+        $query = "SELECT title FROM $mysqlMoviesTable WHERE genre LIKE '%$favGenre%' LIMIT 10";
         $result = $mysqli->query($query);
 
         if ($result && $result->num_rows > 0) {

@@ -15,7 +15,7 @@ $rabbitmqMainQueue = 'signUpQueue';
 // MySQL connection parameters
 $mysqlIP = '127.0.0.1';
 $mysqlUsername = 'root';
-$mysqlPassword = 'root';
+$mysqlPassword = 'random490';
 $mysqlDatabase = 'newdb';
 $mysqlTable = 'Users';
 
