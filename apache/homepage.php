@@ -11,7 +11,7 @@
 	<nav>
 	<ul>
 		<li><a href="homepage.php">Home</a></li>
-		<li><a href="recomendations.php">Recommendations</a></li>
+		<li><a href="recommendations.php">Recommendations</a></li>
 		<li><a href="profile.php">Profile</a></li>
 		<li><a href="bookmark.php">Bookmarks</a></li>
 		<li><a href="friends.php">Friends</a></li>

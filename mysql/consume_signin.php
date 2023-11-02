@@ -86,7 +86,7 @@ function validateUser($username, $password, $mysqlIP, $mysqlUsername, $mysqlPass
     if ($result && $result->num_rows === 1) {
         $row = $result->fetch_assoc();
         $id = $row['id'];
-        $fav_genre = $fav_genre['fav_genre'];
+        $fav_genre = $row['fav_genre'];
         $result->free();
         $mysqli->close();
         return ['id' => $id, 'fav_genre' => $fav_genre];
