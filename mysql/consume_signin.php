@@ -5,7 +5,7 @@ use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
 
 // RabbitMQ connection parameters
-$rabbitmqHost = '10.147.18.28';
+$rabbitmqIP = '10.147.18.28';
 $rabbitmqPort = 5672;
 $rabbitmqUsername = 'rmqsUser';
 $rabbitmqPassword = 'Password123';
@@ -13,20 +13,20 @@ $rabbitmqVHost = 'rmqsVHost';
 $rabbitmqMainQueue = 'signInQueue';
 
 // MySQL connection parameters
-$mysqlHost = '127.0.0.1';
-$mysqlUser = 'root';
+$mysqlIP = '127.0.0.1';
+$mysqlUsername = 'root';
 $mysqlPassword = 'root';
 $mysqlDatabase = 'newdb';
 $mysqlTable = 'Users';
 
 // Establish RabbitMQ connection
-$connection = new AMQPStreamConnection($rabbitmqHost, $rabbitmqPort, $rabbitmqUsername, $rabbitmqPassword, $rabbitmqVHost);
+$connection = new AMQPStreamConnection($rabbitmqIP, $rabbitmqPort, $rabbitmqUsername, $rabbitmqPassword, $rabbitmqVHost);
 $channel = $connection->channel();
 $channel->queue_declare($rabbitmqMainQueue, false, true, false, false);
 echo "Waiting for messages. To exit, press Ctrl+C\n";
 
 // Callback function
-$callback = function ($message) use ($channel, $mysqlHost, $mysqlUser, $mysqlPassword, $mysqlDatabase, $mysqlTable) {
+$callback = function ($message) use ($channel, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable) {
     $signinData = json_decode($message->body, true);
     
     // Set the username and password variables
@@ -35,7 +35,7 @@ $callback = function ($message) use ($channel, $mysqlHost, $mysqlUser, $mysqlPas
         $password = $signinData['password'];
         
         // Validate the username and password from the database
-        if (validateUser($username, $password, $mysqlHost, $mysqlUser, $mysqlPassword, $mysqlDatabase, $mysqlTable)) {
+        if (validateUser($username, $password, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable)) {
             // If the username and password are valid in the database, publish a "GOOD" message to RabbitMQ
             $goodMessage = new AMQPMessage("GOOD");
             $channel->basic_publish($goodMessage, '', $message->get('reply_to'));
@@ -64,9 +64,9 @@ $channel->close();
 $connection->close();
 
 // Validate user function
-function validateUser($username, $password, $mysqlHost, $mysqlUser, $mysqlPassword, $mysqlDatabase, $mysqlTable) {
+function validateUser($username, $password, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable) {
     // Establish MySQL connection
-    $mysqli = new mysqli($mysqlHost, $mysqlUser, $mysqlPassword, $mysqlDatabase);
+    $mysqli = new mysqli($mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
     
     // Check for a successful connection
     if ($mysqli->connect_error) {
