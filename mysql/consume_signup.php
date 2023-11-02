@@ -18,8 +18,8 @@ $rabbitmqMainQueue = 'signUpQueue';
 $mysqlHost = '127.0.0.1';
 $mysqlUser = 'root';
 $mysqlPassword = 'root';
-$mysqlDatabase = 'Project';
-$mysqlTable = 'user_credentials';
+$mysqlDatabase = 'newdb';
+$mysqlTable = 'Users';
 
 // Establish RabbitMQ connection
 $connection = new AMQPStreamConnection($rabbitmqHost, $rabbitmqPort, $rabbitmqUser, $rabbitmqPassword, $rabbitmqVHost);
