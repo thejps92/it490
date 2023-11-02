@@ -53,7 +53,8 @@ $callback = function ($message) use ($username) {
         // Start a session
         session_start();
         $_SESSION['username'] = $username;
-        $_SESSION['id'] = $response['id'];
+        $_SESSION['id'] = $response['user_info']['id'];
+        $_SESSION['fav_genre'] = $response['user_info']['fav_genre'];
         $newSessionToken = session_id();
         
         // Redirect the user to the user page

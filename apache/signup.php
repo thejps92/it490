@@ -23,6 +23,7 @@
             <option value="horror">Horror</option>
             <option value="drama">Drama</option>
         </select>
+        <br><br>
         <input type="submit" value="Submit">
     </form>
     <br>
