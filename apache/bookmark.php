@@ -1,11 +1,24 @@
+<?php
+session_start();
+if (isset($_SESSION['username'])) {
+    // Set the user's username to their username
+    $username = htmlspecialchars($_SESSION['username']);
+} else {
+    // If the user is not signed in redirect them to the home page
+    header('Location: signin.php');
+    exit();
+}
+
+?>
+
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Homepage</title>
+	<title>Bookmarks</title>
 </head>
 <body>
 	<header>
-		<h1>Homepage</h1>
+		<h1>Bookmark Page</h1>
 	<nav>
 	<ul>
 		<li><a href="homepage.php">Home</a></li>
@@ -19,13 +32,15 @@
 
 	<main>
 	<section>
-		<h2>Home</h2>
-		<p>This is the homepage.</p>
+		<h2>Bookmarks</h2>
+		<p>This is the bookmarks.</p>
 	</section>
 	</main>
 
 	<footer>
-	   <p>&copy; <?php echo date("Y"); ?> My Basic Website</p>
+	   <form method="post" action="publish_signout.php">
+                <input type="submit" name="signout" value="Sign Out">
+        </form> 
 	</footer>
 </body>
 </html>

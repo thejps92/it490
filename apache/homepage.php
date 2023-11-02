@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -25,7 +27,9 @@
 	</main>
 
 	<footer>
-	   <p>&copy; <?php echo date("Y"); ?> My Basic Website</p>
+	    <form method="post" action="publish_signout.php">
+                <input type="submit" name="signout" value="Sign Out">
+        </form>
 	</footer>
 </body>
 </html>

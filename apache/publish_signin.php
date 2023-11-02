@@ -56,7 +56,7 @@ $callback = function ($message) use ($username) {
         $newSessionToken = session_id();
         
         // Redirect the user to the user page
-        header('Location: user.php');
+        header('Location: homepage.php');
         $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
         exit();
     } else {
