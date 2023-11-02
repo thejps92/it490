@@ -18,6 +18,7 @@ $mysqlUsername = 'root';
 $mysqlPassword = 'root';
 $mysqlDatabase = 'newdb';
 $mysqlTable = 'Users';
+$mysqlMoviesTable = 'movies';
 
 // Establish RabbitMQ connection
 $connection = new AMQPStreamConnection($rabbitmqIP, $rabbitmqPort, $rabbitmqUsername, $rabbitmqPassword, $rabbitmqVHost);
@@ -38,7 +39,23 @@ $callback = function ($message) use ($channel, $mysqlIP, $mysqlUsername, $mysqlP
         $userInfo = validateUser($username, $password, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable);
         if ($userInfo !== false) {
             // If the username and password are valid in the database, publish a "GOOD" message to RabbitMQ
-            $goodMessage = new AMQPMessage(json_encode(["status" => "GOOD", "user_info" => $userInfo]));
+            $movies = getTop10Movies($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $movieTable);
+
+            if ($movies !== false) {
+                $response = [
+                    "status" => "GOOD",
+                    "user_info" => $userInfo,
+                    "movies" => $movies,
+                ];
+            } else {
+                $response = [
+                    "status" => "GOOD",
+                    "user_info" => $userInfo,
+                    "movies" => [], // No movies found
+                ];
+            }
+
+            $goodMessage = new AMQPMessage(json_encode($response));
             $channel->basic_publish($goodMessage, '', $message->get('reply_to'));
             echo "User $username successfully authenticated\n";
             $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
@@ -95,5 +112,42 @@ function validateUser($username, $password, $mysqlIP, $mysqlUsername, $mysqlPass
     // If the username and password don't match return false
     $mysqli->close();
     return false;
+}
+
+function getTop10Movies($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $movieTable) {
+    // Establish MySQL connection and retrieve the user's favorite genre
+    $mysqli = new mysqli($mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
+
+    // Check for a successful connection
+    if ($mysqli->connect_error) {
+        die("Connection to MySQL failed: " . $mysqli->connect_error);
+    }
+
+    // Retrieve the user's favorite genre from the user table
+    $query = "SELECT fav_genre FROM Users WHERE username = '$username'";
+    $result = $mysqli->query($query);
+
+    if ($result && $result->num_rows === 1) {
+        $row = $result->fetch_assoc();
+        $favGenre = $row['fav_genre'];
+        $result->free();
+
+        // Use the retrieved favGenre to query for top 10 movies
+        $query = "SELECT title FROM $movieTable WHERE genre LIKE '%$favGenre%' LIMIT 10";
+        $result = $mysqli->query($query);
+
+        if ($result && $result->num_rows > 0) {
+            $movies = [];
+            while ($row = $result->fetch_assoc()) {
+                $movies[] = $row;
+            }
+            $result->free();
+            $mysqli->close();
+            return $movies;
+        }
+    }
+
+    $mysqli->close();
+    return [];
 }
 ?>

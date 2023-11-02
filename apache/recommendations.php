@@ -1,14 +1,17 @@
 <?php
 session_start();
-if (isset($_SESSION['username'])) {
-    // Set the user's username to their username
+// Check if the variable $_SESSION is set with the user's information
+if (isset($_SESSION['username'], $_SESSION['id'], $_SESSION['fav_genre'], $_SESSION['movies'])) {
+    // Set the user's information
     $username = htmlspecialchars($_SESSION['username']);
+    $id = $_SESSION['id'];
+    $fav_genre = $_SESSION['fav_genre'];
+    $movies = $_SESSION['movies'];
 } else {
-    // If the user is not signed in redirect them to the home page
+    // If the user is not signed in, redirect them to the home page
     header('Location: signin.php');
     exit();
 }
-
 ?>
 
 
@@ -37,6 +40,23 @@ if (isset($_SESSION['username'])) {
 		<p>This is the recommendations.</p>
 	</section>
 	</main>
+
+	<body>
+	<h1>User Profile</h1>
+        <p>User ID: <?php echo $id; ?></p>
+        <p>Username: <?php echo $username; ?></p>
+        <p>Favorite Genre: <?php echo $fav_genre; ?></p>
+
+        <h2>Top 10 Movies in Your Favorite Genre</h2>
+        <ul>
+            <?php
+            // Iterate through the movies array and display each movie title and genre
+            foreach ($movies as $movie) {
+                echo '<li>' . $movie['title'] . ' - ' . $movie['genre'] . '</li>';
+            }
+            ?>
+        </ul>
+	</body>
 
 	<footer>
 	<form method="post" action="publish_signout.php">
