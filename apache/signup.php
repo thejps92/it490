@@ -14,6 +14,15 @@
         <label for="password">Password:</label>
         <input type="password" id="password" name="password" required>
         <br><br>
+        <label for="fav_genre">Favorite Genre:</label>
+        <select name="fav_genre" id="fav_genre" required>
+            <option value="action">Action</option>
+            <option value="comedy">Comedy</option>
+            <option value="romance">Romance</option>
+            <option value="fantasy">Fantasy</option>
+            <option value="horror">Horror</option>
+            <option value="drama">Drama</option>
+        </select>
         <input type="submit" value="Submit">
     </form>
     <br>

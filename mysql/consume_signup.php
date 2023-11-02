@@ -36,9 +36,10 @@ $callback = function ($message) use ($channel, $mysqli, $mysqlTable) {
     $signupData = json_decode($message->body, true);
     
     // Set the username and password variables
-    if (is_array($signupData) && isset($signupData['username'], $signupData['password'])) {
+    if (is_array($signupData) && isset($signupData['username'], $signupData['password'], $signupData['fav_genre'])) {
         $username = $signupData['username'];
         $password = $signupData['password'];
+        $fav_genre = $signupData['fav_genre'];
         
         // Check if the username already exists in the database
         if (checkUsername($username, $mysqli, $mysqlTable)) {
@@ -49,7 +50,7 @@ $callback = function ($message) use ($channel, $mysqli, $mysqlTable) {
             $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
         } else {
             // If the username doesn't exist, create the new user in the database
-            $sql = "INSERT INTO $mysqlTable (username, password) VALUES ('$username', '$password')";
+            $sql = "INSERT INTO $mysqlTable (username, password, fav_genre) VALUES ('$username', '$password', '$fav_genre')";
             
             if ($mysqli->query($sql)) {
                 // Publish a "GOOD" message to RabbitMQ

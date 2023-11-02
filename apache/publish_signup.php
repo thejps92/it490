@@ -16,11 +16,13 @@ $rabbitmqReplyQueue = 'replySignUpQueue';
 // User input from the form
 $username = $_POST['username'];
 $password = $_POST['password'];
+$fav_genre = $_POST['fav_genre'];
 
 // Create an associative array with the data
 $signupData = array(
     'username' => $username,
-    'password' => $password
+    'password' => $password,
+    'fav_genre' => $fav_genre
 );
 
 // Convert the data to a JSON string
