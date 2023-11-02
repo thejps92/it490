@@ -47,12 +47,13 @@ $channel->queue_declare($rabbitmqReplyQueue, false, true, false, false);
 
 // Callback function
 $callback = function ($message) use ($username) {
-    $response = $message->body;
+    $response = json_decode($message->body, true);
     
-    if ($response === 'GOOD') {
+    if ($response && $response['status'] === 'GOOD') {
         // Start a session
         session_start();
         $_SESSION['username'] = $username;
+        $_SESSION['id'] = $response['id'];
         $newSessionToken = session_id();
         
         // Redirect the user to the user page

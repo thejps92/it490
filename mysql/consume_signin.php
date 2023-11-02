@@ -35,9 +35,10 @@ $callback = function ($message) use ($channel, $mysqlIP, $mysqlUsername, $mysqlP
         $password = $signinData['password'];
         
         // Validate the username and password from the database
-        if (validateUser($username, $password, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable)) {
+        $id = validateUser($username, $password, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable)
+        if ($id !== false) {
             // If the username and password are valid in the database, publish a "GOOD" message to RabbitMQ
-            $goodMessage = new AMQPMessage("GOOD");
+            $goodMessage = new AMQPMessage(jscon_encode(["status" => "GOOD", "id" => $id]));
             $channel->basic_publish($goodMessage, '', $message->get('reply_to'));
             echo "User $username successfully authenticated\n";
             $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
@@ -83,9 +84,11 @@ function validateUser($username, $password, $mysqlIP, $mysqlUsername, $mysqlPass
     
     // If the username and password match return true
     if ($result && $result->num_rows === 1) {
+        $row = $result->fetch_assoc();
+        $id = $row['id'];
         $result->free();
         $mysqli->close();
-        return true;
+        return $id;
     }
     
     // If the username and password don't match return false
