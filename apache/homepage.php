@@ -1,7 +1,3 @@
-<?php
-include('search_bar.php');
-?>
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -11,30 +7,10 @@ include('search_bar.php');
 	<header>
 		<h1>Homepage</h1>
 <br>
-<form method="post" action="">
-	<input type="text" name="search_query" placeholder="Search for a movie by title">
+<form action="publish_search.php" method="post">
+	<input type="text" name="searchQuery" id="searchQuery" placeholder="Search for a movie" required>
 	<input type="submit" value="Search">
 </form>
-
-<?php
-
-if(isset($_POST['search_query'])){
-	$search_query = $_POST['search_query'];
-	$movies = searchMovies($conn, $search_query);
-
-	if(!empty($movies)){
-		echo "<h2>Search Results:</h2>";
-		echo "<ul>";
-		foreach($movies as $movie){
-			echo "<li>$movie</li>";
-		}
-		echo "</ul>";
-	}else{
-		echo "No matching movies found.";
-	}
-}
-
-?>
 
 <br>
 <br>
