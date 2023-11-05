@@ -15,10 +15,12 @@ $rabbitmqReplyQueue = 'replySearchQueue';
 
 // User input from the form
 $searchQuery = $_POST['searchQuery'];
+$searchType = $_POST['searchType'];
 
 // Create an associative array with the data
 $searchData = array(
-    'searchQuery' => $searchQuery
+    'searchQuery' => $searchQuery,
+    'searchType' => $searchType
 );
 
 // Convert the data to a JSON string
