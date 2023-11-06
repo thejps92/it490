@@ -1,14 +1,16 @@
 <?php
 session_start();
-if (isset($_SESSION['username'])) {
+// Check if the variable $_SESSION is set with the user's username
+if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'])) {
     // Set the user's username to their username
-    $username = htmlspecialchars($_SESSION['username']);
+	$user_id = $_SESSION['user_id'];
+	$username = $_SESSION['username'];
+	$fav_genre = $_SESSION['fav_genre'];
 } else {
     // If the user is not signed in redirect them to the home page
     header('Location: signin.php');
     exit();
 }
-
 ?>
 
 <!DOCTYPE html>
@@ -24,7 +26,7 @@ if (isset($_SESSION['username'])) {
 		<li><a href="homepage.php">Home</a></li>
 		<li><a href="recommendations.php">Recommendations</a></li>
 		<li><a href="profile.php">Profile</a></li>
-		<li><a href="bookmark.php">Bookmarks</a></li>
+		<li><a href="bookmarks.php">Bookmarks</a></li>
 		<li><a href="friends.php">Friends</a></li>
 	</ul>
 	</nav>

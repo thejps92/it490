@@ -15,9 +15,9 @@ $rabbitmqMainQueue = 'signInQueue';
 // MySQL connection parameters
 $mysqlIP = '127.0.0.1';
 $mysqlUsername = 'root';
-$mysqlPassword = 'random490';
+$mysqlPassword = 'root';
 $mysqlDatabase = 'newdb';
-$mysqlTable = 'Users';
+$mysqlTable = 'users';
 $mysqlMoviesTable = 'movies';
 
 // Establish RabbitMQ connection
@@ -39,19 +39,24 @@ $callback = function ($message) use ($channel, $mysqlIP, $mysqlUsername, $mysqlP
         $userInfo = validateUser($username, $password, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable);
         if ($userInfo !== false) {
             // If the username and password are valid in the database, publish a "GOOD" message to RabbitMQ
-            $movies = getTop10Movies($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlMoviesTable);
+            $movies = getTop10Movies($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable, $mysqlMoviesTable);
+
+            // Fetch user bookmarks
+            $bookmarks = getUserBookmarks($userInfo['user_id'], $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlMoviesTable);
 
             if ($movies !== false) {
                 $response = [
                     "status" => "GOOD",
                     "user_info" => $userInfo,
                     "movies" => $movies,
+                    "bookmarks" => $bookmarks
                 ];
             } else {
                 $response = [
                     "status" => "GOOD",
                     "user_info" => $userInfo,
-                    "movies" => [], // No movies found
+                    "movies" => [],
+                    "bookmarks" => $bookmarks
                 ];
             }
 
@@ -102,11 +107,12 @@ function validateUser($username, $password, $mysqlIP, $mysqlUsername, $mysqlPass
     // If the username and password match return true
     if ($result && $result->num_rows === 1) {
         $row = $result->fetch_assoc();
-        $id = $row['id'];
+        $user_id = $row['user_id'];
+        $username = $row['username'];
         $fav_genre = $row['fav_genre'];
         $result->free();
         $mysqli->close();
-        return ['id' => $id, 'fav_genre' => $fav_genre];
+        return ['user_id' => $user_id, 'username' => $username, 'fav_genre' => $fav_genre];
     }
     
     // If the username and password don't match return false
@@ -114,7 +120,8 @@ function validateUser($username, $password, $mysqlIP, $mysqlUsername, $mysqlPass
     return false;
 }
 
-function getTop10Movies($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlMoviesTable) {
+// Get top 10 movies function
+function getTop10Movies($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable, $mysqlMoviesTable) {
     // Establish MySQL connection and retrieve the user's favorite genre
     $mysqli = new mysqli($mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
 
@@ -124,7 +131,7 @@ function getTop10Movies($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $my
     }
 
     // Retrieve the user's favorite genre from the user table
-    $query = "SELECT fav_genre FROM Users WHERE username = '$username'";
+    $query = "SELECT fav_genre FROM $mysqlTable WHERE username = '$username'";
     $result = $mysqli->query($query);
 
     if ($result && $result->num_rows === 1) {
@@ -133,7 +140,7 @@ function getTop10Movies($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $my
         $result->free();
 
         // Use the retrieved favGenre to query for top 10 movies
-        $query = "SELECT title FROM $mysqlMoviesTable WHERE genre LIKE '%$favGenre%' LIMIT 10";
+        $query = "SELECT title, year, genre FROM $mysqlMoviesTable WHERE genre LIKE '%$favGenre%' LIMIT 10";
         $result = $mysqli->query($query);
 
         if ($result && $result->num_rows > 0) {
@@ -145,6 +152,44 @@ function getTop10Movies($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $my
             $mysqli->close();
             return $movies;
         }
+    }
+
+    $mysqli->close();
+    return [];
+}
+
+// Get user bookmarks function
+function getUserBookmarks($user_id, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlMoviesTable) {
+    // Establish MySQL connection
+    $mysqli = new mysqli($mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
+
+    // Check for a successful connection
+    if ($mysqli->connect_error) {
+        die("Connection to MySQL failed: " . $mysqli->connect_error);
+    }
+
+    // Escape the user_id to prevent SQL injection
+    $escapedUserID = $mysqli->real_escape_string($user_id);
+
+    // Query the bookmarks table, joining with the movies table to get movie details
+    $query = "SELECT M.* FROM bookmarks AS B
+              JOIN $mysqlMoviesTable AS M ON B.movie_id = M.movie_id
+              WHERE B.user_id = '$escapedUserID'";
+
+    $result = $mysqli->query($query);
+
+    if ($result && $result->num_rows > 0) {
+        $bookmarks = array();
+
+        // Fetch all user's bookmarks with movie details
+        while ($row = $result->fetch_assoc()) {
+            $bookmarks[] = $row;
+        }
+
+        $result->free();
+        $mysqli->close();
+
+        return $bookmarks;
     }
 
     $mysqli->close();

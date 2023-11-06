@@ -1,10 +1,10 @@
 <?php
 session_start();
 // Check if the variable $_SESSION is set with the user's information
-if (isset($_SESSION['username'], $_SESSION['id'], $_SESSION['fav_genre'], $_SESSION['movies'])) {
+if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'], $_SESSION['movies'])) {
     // Set the user's information
-    $username = htmlspecialchars($_SESSION['username']);
-    $id = $_SESSION['id'];
+    $user_id = $_SESSION['user_id'];
+	$username = $_SESSION['username'];
     $fav_genre = $_SESSION['fav_genre'];
     $movies = $_SESSION['movies'];
 } else {
@@ -28,7 +28,7 @@ if (isset($_SESSION['username'], $_SESSION['id'], $_SESSION['fav_genre'], $_SESS
 		<li><a href="homepage.php">Home</a></li>
 		<li><a href="recommendations.php">Recommendations</a></li>
 		<li><a href="profile.php">Profile</a></li>
-		<li><a href="bookmark.php">Bookmarks</a></li>
+		<li><a href="bookmarks.php">Bookmarks</a></li>
 		<li><a href="friends.php">Friends</a></li>
 	</ul>
 	</nav>
@@ -43,7 +43,7 @@ if (isset($_SESSION['username'], $_SESSION['id'], $_SESSION['fav_genre'], $_SESS
 
 	<body>
 	<h1>User Profile</h1>
-        <p>User ID: <?php echo $id; ?></p>
+        <p>User ID: <?php echo $user_id; ?></p>
         <p>Username: <?php echo $username; ?></p>
         <p>Favorite Genre: <?php echo $fav_genre; ?></p>
 
@@ -52,7 +52,7 @@ if (isset($_SESSION['username'], $_SESSION['id'], $_SESSION['fav_genre'], $_SESS
             <?php
             // Iterate through the movies array and display each movie title and genre
             foreach ($movies as $movie) {
-                echo '<li>' . $movie['title'] . ' - ' . $movie['genre'] . '</li>';
+                echo '<li>' . $movie['title'] . ' - ' . $movie['year'] . ' - ' . $movie['genre'] . '</li>';
             }
             ?>
         </ul>

@@ -6,8 +6,9 @@ if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'])) 
 	$user_id = $_SESSION['user_id'];
 	$username = $_SESSION['username'];
 	$fav_genre = $_SESSION['fav_genre'];
+    $bookmarks = $_SESSION['bookmarks'];
 } else {
-    // If the user is not signed in redirect them to the home page
+    // If the user is not signed in, redirect them to the home page
     header('Location: signin.php');
     exit();
 }
@@ -16,11 +17,11 @@ if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'])) 
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Profile</title>
+	<title>Bookmarks</title>
 </head>
 <body>
 	<header>
-		<h1>Profile Page</h1>
+		<h1>Bookmark Page</h1>
 	<nav>
 	<ul>
 		<li><a href="homepage.php">Home</a></li>
@@ -34,23 +35,32 @@ if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'])) 
 
 	<main>
 	<section>
-		<h2>Profile</h2>
-		<p>This is the profile page.</p>
+		<h2>Bookmarks</h2>
+		<?php
+		// Check if the user has any bookmarks
+		if (empty($bookmarks)) {
+		    echo "<p>No bookmarks found.</p>";
+		} else {
+		    // Display the bookmarks in a table
+		    echo "<table>";
+		    echo "<tr><th>Title</th><th>Year</th><th>Genre</th></tr>";
+		    foreach ($bookmarks as $bookmark) {
+		        echo "<tr>";
+		        echo "<td>" . $bookmark['title'] . "</td>";
+		        echo "<td>" . $bookmark['year'] . "</td>";
+		        echo "<td>" . $bookmark['genre'] . "</td>";
+		        echo "</tr>";
+		    }
+		    echo "</table>";
+		}
+		?>
 	</section>
 	</main>
 
-	<body>
-	<h1>User Profile</h1>
-	<p>User ID: <?php echo $user_id; ?></p>
-	<p>Username: <?php echo $username; ?></p>
-	<p>Favorite Genre: <?php echo $fav_genre; ?></p>
-</body>
-
 	<footer>
-	   <h1>Hello, <?php echo $username; ?></h1>
-        <form method="post" action="publish_signout.php">
+	   <form method="post" action="publish_signout.php">
                 <input type="submit" name="signout" value="Sign Out">
-        </form>
+        </form> 
 	</footer>
 </body>
 </html>
