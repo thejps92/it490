@@ -41,6 +41,60 @@ if (isset($_SESSION['user_id'])) {
             }
             ?>
         </section>
+        
+        <section>
+            <h2>Reviews</h2>
+            <?php
+            if (isset($_GET['reviews'])) {
+                $reviews = json_decode(urldecode($_GET['reviews']), true);
+                if (!empty($reviews)) {
+                    echo '<table>';
+                    echo '<tr><th>User</th><th>Review</th><th>Rating</th><th>Date</th></tr>';
+                    foreach ($reviews as $review) {
+                        echo '<tr>';
+                        echo '<td>' . $review['username'] . '</td>';
+                        echo '<td>' . $review['review'] . '</td>';
+                        echo '<td>' . $review['rating'] . '</td>';
+                        echo '<td>' . $review['review_date'] . '</td>';
+                        echo '</tr>';
+                    }
+                    echo '</table>';
+                } else {
+                    echo 'No reviews available.';
+                }
+            }
+            ?>
+        </section>
+
+        <section>
+            <h2>Write a Review</h2>
+            <?php
+            if (isset($_SESSION['user_id'])) {
+                echo '
+                <form action="publish_review.php" method="POST">
+                    <input type="hidden" name="user_id" value="' . $_SESSION['user_id'] . '">
+                    <input type="hidden" name="movie_id" value="' . $movie['movie_id'] . '">
+                    <label for="review">Your Review:</label><br>
+                    <textarea id="review" name="review" rows="4" cols="50" required></textarea><br><br>
+
+                    <label for="rating">Your Rating:</label>
+                    <select id="rating" name="rating" required>
+                        <option value="" disabled selected>Select rating...</option>
+                        <option value="5">5</option>
+                        <option value="4">4</option>
+                        <option value="3">3</option>
+                        <option value="2">2</option>
+                        <option value="1">1</option>
+                    </select><br><br>
+                    
+                    <input type="submit" value="Submit Review">
+                </form>
+                ';
+            } else {
+                echo 'Please <a href="signin.php">sign in</a> to write a review.';
+            }
+            ?>
+        </section>
     </main>
 
     <script>

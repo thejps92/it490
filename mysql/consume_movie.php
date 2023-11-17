@@ -18,6 +18,7 @@ $mysqlUsername = 'root';
 $mysqlPassword = 'root';
 $mysqlDatabase = 'newdb';
 $mysqlMoviesTable = 'movies';
+$mysqlReviewsTable = 'reviews';
 
 // Establish RabbitMQ connection
 $connection = new AMQPStreamConnection($rabbitmqIP, $rabbitmqPort, $rabbitmqUsername, $rabbitmqPassword, $rabbitmqVHost);
@@ -26,19 +27,21 @@ $channel->queue_declare($rabbitmqMainQueue, false, true, false, false);
 echo "Waiting for messages. To exit, press Ctrl+C\n";
 
 // Callback function
-$callback = function ($message) use ($channel, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlMoviesTable) {
+$callback = function ($message) use ($channel, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlMoviesTable, $mysqlReviewsTable) {
     $movieData = json_decode($message->body, true);
     
     // Set the movie_id variable
     if ($movieData && isset($movieData['movie_id'])) {
         $movieId = $movieData['movie_id'];
         
-        // Get the movie for the movie_id
+        // Get the movie and reviews for the movie_id
         $movie = getMovie($movieId, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlMoviesTable);
+        $reviews = getMovieReviews($movieId, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlReviewsTable);
         
         $response = [
             "status" => "GOOD",
-            "movie" => $movie
+            "movie" => $movie,
+            "reviews" => $reviews
         ];
         
         $goodMessage = new AMQPMessage(json_encode($response));
@@ -96,6 +99,38 @@ function getMovie($movieId, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlData
         $mysqli->close();
         
         return $movie;
+    }
+
+    $mysqli->close();
+    return [];
+}
+
+// Get movie reviews function
+function getMovieReviews($movieId, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlReviewsTable) {
+    $mysqli = new mysqli($mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
+
+    if ($mysqli->connect_error) {
+        die("Connection to MySQL failed: " . $mysqli->connect_error);
+    }
+
+    $query = "SELECT users.username, reviews.review, reviews.rating, reviews.review_date 
+              FROM $mysqlReviewsTable AS reviews
+              JOIN users ON reviews.user_id = users.user_id
+              WHERE reviews.movie_id = $movieId";
+
+    $result = $mysqli->query($query);
+
+    if ($result && $result->num_rows > 0) {
+        $reviews = [];
+
+        while ($row = $result->fetch_assoc()) {
+            $reviews[] = $row;
+        }
+
+        $result->free();
+        $mysqli->close();
+
+        return $reviews;
     }
 
     $mysqli->close();
