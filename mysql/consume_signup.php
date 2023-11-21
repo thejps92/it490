@@ -82,7 +82,7 @@ $mysqli->close();
 function checkUsername($username, $mysqli, $mysqlTable) {
     // Escape the username to prevent SQL injection
     $escapedUsername = $mysqli->real_escape_string($username);
-    
+    }
     // Query the user table for the provided username
     $query = "SELECT * FROM $mysqlTable WHERE username = '$escapedUsername'";
     $result = $mysqli->query($query);
@@ -95,6 +95,5 @@ function checkUsername($username, $mysqli, $mysqlTable) {
             $result->free();
             return true;
         }
-    }
-
+     }  
 ?>
