@@ -86,11 +86,11 @@ function getMovieDetails($searchQuery, $searchType, $mysqlIP, $mysqlUsername, $m
 
     // Query the movies table based on the search query and search type
     if ($searchType === 'title') {
-        $query = "SELECT * FROM $mysqlMoviesTable WHERE title LIKE '%$escapedSearchQuery%'";
+        $query = "SELECT movie_id, title FROM $mysqlMoviesTable WHERE title LIKE '%$escapedSearchQuery%'";
     } elseif ($searchType === 'year') {
-        $query = "SELECT * FROM $mysqlMoviesTable WHERE year = '$escapedSearchQuery'";
+        $query = "SELECT movie_id, title FROM $mysqlMoviesTable WHERE year = '$escapedSearchQuery'";
     } elseif ($searchType === 'genre') {
-        $query = "SELECT * FROM $mysqlMoviesTable WHERE genre = '$escapedSearchQuery'";
+        $query = "SELECT movie_id, title FROM $mysqlMoviesTable WHERE genre = '$escapedSearchQuery'";
     }
     
     $result = $mysqli->query($query);

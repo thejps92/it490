@@ -115,6 +115,17 @@ function validateUser($username, $password, $mysqlIP, $mysqlUsername, $mysqlPass
         return ['user_id' => $user_id, 'username' => $username, 'fav_genre' => $fav_genre];
     }
     
+
+// Verify the hashed password
+        if (password_verify($password, $storedPassword)) {
+            $user_id = $row['user_id'];
+            $username = $row['username'];
+            $fav_genre = $row['fav_genre'];
+            $result->free();
+            $mysqli->close();
+            return ['user_id' => $user_id, 'username' => $username, 'fav_genre' => $fav_genre];
+        }
+    }
     // If the username and password don't match return false
     $mysqli->close();
     return false;
