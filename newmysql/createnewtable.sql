@@ -1,10 +1,10 @@
 CREATE TABLE movies (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    Title VARCHAR(255) NOT NULL,
-    Director VARCHAR(255),
-    Genre VARCHAR(255),
-    Runtime INT,
-    Year INT,
-    SampledTitle VARCHAR(255)
+   movie_id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    director VARCHAR(255),
+    genre VARCHAR(255),
+    runtime INT,
+    year INT,
+    sampledTitle VARCHAR(255)
 );
 
