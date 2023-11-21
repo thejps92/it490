@@ -7,7 +7,7 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 // Pull in db.php so we can access the variables from it
-require_once(__DIR__ . "/../lib/db.php");
+require_once('/home/justis/git/it490/mysql/db.php');
 
 use Project\db;
 
