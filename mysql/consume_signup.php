@@ -51,7 +51,7 @@ $callback = function ($message) use ($channel, $mysqli, $mysqlTable) {
         } else {
             // If the username doesn't exist, create the new user in the database
             $sql = "INSERT INTO $mysqlTable (username, password, fav_genre) VALUES ('$username', '$password', '$fav_genre')";
-            
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT); //NEW
             if ($mysqli->query($sql)) {
                 // Publish a "GOOD" message to RabbitMQ
                 $goodMessage = new AMQPMessage("GOOD");
@@ -89,12 +89,12 @@ function checkUsername($username, $mysqli, $mysqlTable) {
     
     // If the username exists return ture
     if ($result && $result->num_rows > 0) {
-        $result->free();
-        return true;
+          $userData = $result->fetch_assoc();
+        $hashedPassword = $userData['password'];
+        if (password_verify($password, $hashedPassword)) {
+            $result->free();
+            return true;
+        }
     }
-    
-    // If the username doesn't exist return false
-    $result->free();
-    return false;
-}
+
 ?>
