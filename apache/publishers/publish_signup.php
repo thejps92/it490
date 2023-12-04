@@ -49,9 +49,9 @@ $channel->queue_declare($rabbitmqReplyQueue, false, true, false, false);
 
 // Callback function
 $callback = function ($message) use ($username) {
-    $response = $message->body;
+    $response = json_decode($message->body, true);
     
-    if ($response === 'GOOD') {
+    if ($response['status'] === 'GOOD') {
         // Redirect the user to the sign in page
         header('Location: signin.php');
         $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);

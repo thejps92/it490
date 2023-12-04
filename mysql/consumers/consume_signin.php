@@ -101,23 +101,23 @@ function validateUser($username, $password, $mysqlIP, $mysqlUsername, $mysqlPass
     $escapedPassword = $mysqli->real_escape_string($password);
     
     // Query the user table for the provided username and password
-    $query = "SELECT * FROM $mysqlTable WHERE username = '$escapedUsername' AND password = '$escapedPassword'";
+    $query = "SELECT * FROM $mysqlTable WHERE username = '$escapedUsername'";
     $result = $mysqli->query($query);
+    $row = $result->fetch_assoc();
     
     // If the username and password match return true
-    if ($result && $result->num_rows === 1) {
-        $row = $result->fetch_assoc();
+    if (password_verify($escapedPassword, $row['password'])) {
         $user_id = $row['user_id'];
         $username = $row['username'];
         $fav_genre = $row['fav_genre'];
         $result->free();
         $mysqli->close();
         return ['user_id' => $user_id, 'username' => $username, 'fav_genre' => $fav_genre];
-    }
-    
+    } else {
     // If the username and password don't match return false
-    $mysqli->close();
-    return false;
+        $mysqli->close();
+        return false;
+    }
 }
 
 // Get top 10 movies function
