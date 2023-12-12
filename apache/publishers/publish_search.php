@@ -13,7 +13,7 @@ $rabbitmqVHost = 'rmqsVHost';
 $rabbitmqMainQueue = 'searchQueue';
 $rabbitmqReplyQueue = 'replySearchQueue';
 
-// User input from the form
+// Data from the form
 $searchQuery = $_POST['searchQuery'];
 $searchType = $_POST['searchType'];
 
@@ -23,16 +23,13 @@ $searchData = array(
     'searchType' => $searchType
 );
 
-// Convert the data to a JSON string
-$jsonSearchData = json_encode($searchData);
-
 // Establish RabbitMQ connection
 $connection = new AMQPStreamConnection($rabbitmqIP, $rabbitmqPort, $rabbitmqUsername, $rabbitmqPassword, $rabbitmqVHost);
 $channel = $connection->channel();
 $channel->queue_declare($rabbitmqMainQueue, false, true, false, false);
 
 // Create and publish the message to RabbitMQ
-$message = new AMQPMessage($jsonSearchData, ['reply_to' => $rabbitmqReplyQueue]);
+$message = new AMQPMessage(json_encode($searchData), ['reply_to' => $rabbitmqReplyQueue]);
 $channel->basic_publish($message, '', $rabbitmqMainQueue);
 
 // Close the RabbitMQ connection
@@ -48,14 +45,14 @@ $channel->queue_declare($rabbitmqReplyQueue, false, true, false, false);
 $callback = function ($message) {
     $response = json_decode($message->body, true);
     
-    // If the response from MySQL is 'GOOD' then redirect the user to the search results page with the results in the URL
-    if ($response && $response['status'] === 'GOOD') {
-        header('Location: search_results.php?results=' . urlencode(json_encode($response['movieDetails'])));
+    if ($response['status'] === 'GOOD') {
+        session_start();
+        $_SESSION['movieDetails'] = $response['movieDetails'];
+        header('Location: search_results.php');
         $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
         exit();
     } else {
-        // If the response from MySQL is not 'GOOD' then redirect the user to to search results page with error in the URL
-        header('Location: search_results.php?results=error');
+        header('Location: error.php');
         $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
         exit();
     }

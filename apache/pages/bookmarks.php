@@ -1,14 +1,11 @@
 <?php
 session_start();
-// Check if the variable $_SESSION is set with the user's username
 if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'])) {
-    // Set the user's username to their username
 	$user_id = $_SESSION['user_id'];
 	$username = $_SESSION['username'];
 	$fav_genre = $_SESSION['fav_genre'];
-    $bookmarks = $_SESSION['bookmarks'];
+	$bookmarks = $_SESSION['bookmarks'];
 } else {
-    // If the user is not signed in, redirect them to the home page
     header('Location: signin.php');
     exit();
 }
@@ -21,7 +18,7 @@ if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'])) 
 </head>
 <body>
 	<header>
-		<h1>Bookmark Page</h1>
+		<h1>Bookmarks</h1>
 	<nav>
 	<ul>
 		<li><a href="index.php">Home</a></li>
@@ -37,12 +34,8 @@ if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'])) 
 	<section>
 		<h2>Bookmarks</h2>
 		<?php
-		// Check if the user has any bookmarks
-		if (empty($bookmarks)) {
-		    echo "<p>No bookmarks found.</p>";
-		} else {
-		    // Display the bookmarks in a table
-		    echo "<table>";
+		if (!empty($bookmarks)) {
+			echo "<table>";
 		    echo "<tr><th>Title</th><th>Year</th><th>Genre</th></tr>";
 		    foreach ($bookmarks as $bookmark) {
 		        echo "<tr>";
@@ -52,6 +45,8 @@ if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'])) 
 		        echo "</tr>";
 		    }
 		    echo "</table>";
+		} else {
+			echo "<p>No bookmarks found.</p>";
 		}
 		?>
 	</section>

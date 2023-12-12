@@ -1,3 +1,13 @@
+<?php
+session_start();
+if (isset($_SESSION['movieDetails'])) {
+    $movieDetails = $_SESSION['movieDetails'];
+} else {
+    header('Location: index.php');
+    exit();
+}
+?>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -21,26 +31,20 @@
         <section>
             <h2>Here are your search results:</h2>
             <?php
-            if (isset($_GET['results'])) {
-                $results = json_decode($_GET['results'], true);
-
-                if (!empty($results)) {
-                    echo '<ul>';
-                    foreach ($results as $result) {
-                        echo '<li>';
-                        echo '<strong>Title:</strong> ' . $result['title'] . '<br>';
-                        echo '<form action="publish_movie.php" method="post">';
-                        echo '<input type="hidden" name="movie_id" value="' . $result['movie_id'] . '">';
-                        echo '<input type="submit" value="View Movie">';
-                        echo '</form>';
-                        echo '</li>';
-                    }
-                    echo '</ul>';
-                } else {
-                    echo 'No results found.';
+            if (!empty($movieDetails)) {
+                echo '<ul>';
+                foreach ($movieDetails as $movieDetail) {
+                    echo '<li>';
+                    echo '<strong>Title:</strong> ' . $movieDetail['title'] . '<br>';
+                    echo '<form action="publish_movie.php" method="post">';
+                    echo '<input type="hidden" name="movie_id" value="' . $movieDetail['movie_id'] . '">';
+                    echo '<input type="submit" value="View Movie">';
+                    echo '</form>';
+                    echo '</li>';
                 }
+                echo '</ul>';
             } else {
-                echo 'Search failed. Please try again.';
+                echo 'No results found.';
             }
             ?>
         </section>

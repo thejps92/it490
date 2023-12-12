@@ -29,25 +29,24 @@ echo "Waiting for messages. To exit, press Ctrl+C\n";
 $callback = function ($message) use ($channel, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlReviewsTable) {
     $reviewData = json_decode($message->body, true);
 
+    // If there is review data, then insert the review data
     if ($reviewData) {
         insertReview($mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlReviewsTable, $reviewData);
-        echo "Inserted review into database for user ID: " . $reviewData['user_id'] . " and movie ID: " . $reviewData['movie_id']. PHP_EOL;
-
         $response = [
             "status" => "GOOD"
         ];
-
         $goodMessage = new AMQPMessage(json_encode($response));
         $channel->basic_publish($goodMessage, '', $message->get('reply_to'));
+        echo "Inserted review into database for user ID: " . $reviewData['user_id'] . " and movie ID: " . $reviewData['movie_id'] . "\n";
         $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
     }
     else {
         $response = [
             "status" => "BAD"
         ];
-
         $badMessage = new AMQPMessage(json_encode($response));
         $channel->basic_publish($badMessage, '', $message->get('reply_to'));
+        echo "Bad request for inserting review";
         $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
     }
 };
@@ -64,22 +63,22 @@ while (count($channel->callbacks)) {
 $channel->close();
 $connection->close();
 
-// Function to insert a new review
+// Database functions
+
+// Insert review function
 function insertReview($mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlReviewsTable, $reviewData) {
     // Establish MySQL connection
     $mysqli = new mysqli($mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
 
-    // Check for a successful connection
     if ($mysqli->connect_error) {
         die("Connection to MySQL failed: " . $mysqli->connect_error);
     }
 
-    // Prepare the SQL statement to insert data into the reviews table
+    // Prepare a statement to insert the review into the reviews table
     $stmt = $mysqli->prepare("INSERT INTO $mysqlReviewsTable (user_id, movie_id, review, rating) VALUES (?, ?, ?, ?)");
-
-    // Bind parameters and execute the statement
     $stmt->bind_param("iisi", $reviewData['user_id'], $reviewData['movie_id'], $reviewData['review'], $reviewData['rating']);
     $stmt->execute();
     $stmt->close();
+    $mysqli->close();
 }
 ?>

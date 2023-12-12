@@ -13,26 +13,25 @@ $rabbitmqVHost = 'rmqsVHost';
 $rabbitmqMainQueue = 'bookmarkQueue';
 $rabbitmqReplyQueue = 'replyBookmarkQueue';
 
-// User input from the button click
+// Data from the button click
 $bookmarkData = json_decode(file_get_contents('php://input'), true);
 
-if ($bookmarkData && isset($bookmarkData['user_id'], $bookmarkData['movie_id'])) {
-    // Convert the data back to a JSON string
-    $jsonBookmarkData = json_encode($bookmarkData);
-
+// Send the data to RabbitMQ
+if (isset($bookmarkData['user_id'], $bookmarkData['movie_id'])) {
     // Establish RabbitMQ connection
     $connection = new AMQPStreamConnection($rabbitmqIP, $rabbitmqPort, $rabbitmqUsername, $rabbitmqPassword, $rabbitmqVHost);
     $channel = $connection->channel();
     $channel->queue_declare($rabbitmqMainQueue, false, true, false, false);
 
     // Create and publish the message to RabbitMQ
-    $message = new AMQPMessage($jsonBookmarkData, ['reply_to' => $rabbitmqReplyQueue]);
+    $message = new AMQPMessage(json_encode($bookmarkData), ['reply_to' => $rabbitmqReplyQueue]);
     $channel->basic_publish($message, '', $rabbitmqMainQueue);
 
     // Close the RabbitMQ connection
     $channel->close();
     $connection->close();
 } else {
+    // Post a 400 HTTP response code to indicate a bad request
     http_response_code(400);
     echo "Bad Request";
 }
@@ -46,14 +45,12 @@ $channel->queue_declare($rabbitmqReplyQueue, false, true, false, false);
 $callback = function ($message) {
     $response = json_decode($message->body, true);
     
-    if ($response && $response['status'] === 'GOOD') {
-        // Start a session
+    if ($response['status'] === 'GOOD') {
         session_start();
         $_SESSION['bookmarks'] = $response['bookmarks'];
         $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
         exit();
     } else {
-        // Figure out a way to do some sort of JS alert here that will appear on the search_results.php page
         $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
         exit();
     }

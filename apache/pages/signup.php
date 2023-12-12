@@ -27,6 +27,7 @@
         <input type="submit" value="Submit">
     </form>
     <br>
-    <p>Already a user? <a href="signin.php">Click here.</a></p>
+    <p>Already a user? <a href="signin.php">Sign in</a></p>
+    <p>Go to the Home page -> <a href="index.php">Home</a></p>
 </body>
 </html>

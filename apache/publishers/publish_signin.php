@@ -13,7 +13,7 @@ $rabbitmqVHost = 'rmqsVHost';
 $rabbitmqMainQueue = 'signInQueue';
 $rabbitmqReplyQueue = 'replySignInQueue';
 
-// User input from the form
+// Data from the form
 $username = $_POST['username'];
 $password = $_POST['password'];
 
@@ -23,23 +23,19 @@ $signinData = array(
     'password' => $password
 );
 
-// Convert the data to a JSON string
-$jsonSigninData = json_encode($signinData);
-
 // Establish RabbitMQ connection
 $connection = new AMQPStreamConnection($rabbitmqIP, $rabbitmqPort, $rabbitmqUsername, $rabbitmqPassword, $rabbitmqVHost);
 $channel = $connection->channel();
 $channel->queue_declare($rabbitmqMainQueue, false, true, false, false);
 
 // Create and publish the message to RabbitMQ
-$message = new AMQPMessage($jsonSigninData, ['reply_to' => $rabbitmqReplyQueue]);
+$message = new AMQPMessage(json_encode($signinData), ['reply_to' => $rabbitmqReplyQueue]);
 $channel->basic_publish($message, '', $rabbitmqMainQueue);
 
 // Close the RabbitMQ connection
 $channel->close();
 $connection->close();
 
-// Redirection logic
 // Establish RabbitMQ connection
 $connection = new AMQPStreamConnection($rabbitmqIP, $rabbitmqPort, $rabbitmqUsername, $rabbitmqPassword, $rabbitmqVHost);
 $channel = $connection->channel();
@@ -49,8 +45,7 @@ $channel->queue_declare($rabbitmqReplyQueue, false, true, false, false);
 $callback = function ($message) {
     $response = json_decode($message->body, true);
     
-    if ($response && $response['status'] === 'GOOD') {
-        // Start a session
+    if ($response['status'] === 'GOOD') {
         session_start();
         $_SESSION['user_id'] = $response['user_info']['user_id'];
         $_SESSION['username'] = $response['user_info']['username'];
@@ -58,13 +53,10 @@ $callback = function ($message) {
         $_SESSION['movies'] = $response['movies'];
         $_SESSION['bookmarks'] = $response['bookmarks'];
         $newSessionToken = session_id();
-        
-        // Redirect the user to the user page
         header('Location: index.php');
         $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
         exit();
     } else {
-        // Alert the user of an error and either redirect them to the sign in page or the home page based on their selection
         echo "<script>
         var confirmation = confirm('Incorrect username or password. Please try again.');
         if (confirmation) {

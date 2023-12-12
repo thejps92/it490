@@ -30,14 +30,14 @@ $callback = function ($message) use ($channel, $mysqlIP, $mysqlUsername, $mysqlP
     $searchData = json_decode($message->body, true);
 
     // Set the searchQuery and searchType variable
-    if (is_array($searchData) && isset($searchData['searchQuery'], $searchData['searchType'])) {
+    if (isset($searchData['searchQuery'], $searchData['searchType'])) {
         $searchQuery = $searchData['searchQuery'];
         $searchType = $searchData['searchType'];
 
         // Get movie details based on the search query and search type
         $movieDetails = getMovieDetails($searchQuery, $searchType, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlMoviesTable);
 
-        // If there are movie details, publish a 'GOOD' message to RabbitMQ
+        // Send the movie details
         if ($movieDetails !== false) {
             $response = [
                 "status" => "GOOD",
@@ -49,8 +49,11 @@ $callback = function ($message) use ($channel, $mysqlIP, $mysqlUsername, $mysqlP
             echo "Movie details sent for query: $searchQuery\n";
             $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
         } else {
-            // If there are no movie details, publish a 'BAD' message to RabbitMQ
-            $badMessage = new AMQPMessage("BAD");
+            $response = [
+                "status" => "BAD"
+            ];
+
+            $badMessage = new AMQPMessage(json_encode($response));
             $channel->basic_publish($badMessage, '', $message->get('reply_to'));
             echo "No movie details found for query: $searchQuery\n";
             $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
@@ -71,47 +74,50 @@ while (count($channel->callbacks)) {
 $channel->close();
 $connection->close();
 
+// Database functions
+
 // getMovieDetails function
 function getMovieDetails($searchQuery, $searchType, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlMoviesTable) {
     // Establish MySQL connection
     $mysqli = new mysqli($mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
-
-    // Check for a successful connection
+    
     if ($mysqli->connect_error) {
         die("Connection to MySQL failed: " . $mysqli->connect_error);
     }
 
-    // Escape the search query to prevent SQL injection
-    $escapedSearchQuery = $mysqli->real_escape_string($searchQuery);
-
-    // Query the movies table based on the search query and search type
+    // Prepare a statement to query the movies table based on the search query and search type
     if ($searchType === 'title') {
-        $query = "SELECT movie_id, title FROM $mysqlMoviesTable WHERE title LIKE '%$escapedSearchQuery%'";
+        $query = "SELECT movie_id, title FROM $mysqlMoviesTable WHERE title LIKE ?";
+        $param = '%' . $searchQuery . '%';
     } elseif ($searchType === 'year') {
-        $query = "SELECT movie_id, title FROM $mysqlMoviesTable WHERE year = '$escapedSearchQuery'";
+        $query = "SELECT movie_id, title FROM $mysqlMoviesTable WHERE year = ?";
+        $param = $searchQuery;
     } elseif ($searchType === 'genre') {
-        $query = "SELECT movie_id, title FROM $mysqlMoviesTable WHERE genre = '$escapedSearchQuery'";
+        $query = "SELECT movie_id, title FROM $mysqlMoviesTable WHERE genre = ?";
+        $param = $searchQuery;
     }
-    
-    $result = $mysqli->query($query);
 
-    // Check if any rows are returned
-    if ($result && $result->num_rows > 0) {
-        $movieDetails = array();
+    $stmt = $mysqli->prepare($query);
+    $stmt->bind_param("s", $param);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-        // Fetch all matching movie details
+    // Check if any rows are returned and return the movie details
+    if ($result->num_rows > 0) {
+        $movieDetails = [];
+
         while ($row = $result->fetch_assoc()) {
             $movieDetails[] = $row;
         }
 
         $result->free();
+        $stmt->close();
         $mysqli->close();
-
         return $movieDetails;
+    } else {
+        $stmt->close();
+        $mysqli->close();
+        return false;
     }
-
-    // If no results found, return false
-    $mysqli->close();
-    return false;
 }
 ?>

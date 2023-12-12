@@ -13,13 +13,19 @@ $rabbitmqVHost = 'rmqsVHost';
 $rabbitmqMainQueue = 'reviewQueue';
 $rabbitmqReplyQueue = 'replyReviewQueue';
 
-// Data from the POST request
-$reviewData = [
-    'user_id' => $_POST['user_id'] ?? '',
-    'movie_id' => $_POST['movie_id'] ?? '',
-    'review' => $_POST['review'] ?? '',
-    'rating' => $_POST['rating'] ?? '',
-];
+// Data from the form
+$userId = $_POST['user_id'];
+$movieId = $_POST['movie_id'];
+$review = $_POST['review'];
+$rating = $_POST['rating'];
+
+// Create an associative array with the data
+$reviewData = array(
+    'user_id' => $userId,
+    'movie_id' => $movieId,
+    'review' => $review,
+    'rating' => $rating
+);
 
 // Establish RabbitMQ connection
 $connection = new AMQPStreamConnection($rabbitmqIP, $rabbitmqPort, $rabbitmqUsername, $rabbitmqPassword, $rabbitmqVHost);
@@ -43,13 +49,11 @@ $channel->queue_declare($rabbitmqReplyQueue, false, true, false, false);
 $callback = function ($message) {
     $response = json_decode($message->body, true);
     
-    if ($response && $response['status'] === 'GOOD') {
-        // Redirect to the home page
+    if ($response['status'] === 'GOOD') {
         header("Location: index.php");
         $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
         exit();
     } else {
-        // Maybe redirect the user to a 404 not found page in the future...
         $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
         exit();
     }

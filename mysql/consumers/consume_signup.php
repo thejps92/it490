@@ -30,22 +30,24 @@ $callback = function ($message) use ($channel, $mysqlIP, $mysqlUsername, $mysqlP
     $signupData = json_decode($message->body, true);
     
     // Set the username and password variables
-    if (is_array($signupData) && isset($signupData['username'], $signupData['password'], $signupData['fav_genre'])) {
+    if (isset($signupData['username'], $signupData['password'], $signupData['fav_genre'])) {
         $username = $signupData['username'];
         $password = $signupData['password'];
         $fav_genre = $signupData['fav_genre'];
         
         // Check if the username already exists in the database
-        if (checkUsername($username, $password, $fav_genre, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable)) {
-            // If the username already exists, publish a "BAD" message to RabbitMQ
-            $response = ["status" => "BAD"];
+        if (checkUser($username, $password, $fav_genre, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable)) {
+            $response = [
+                "status" => "BAD"
+            ];
             $badMessage = new AMQPMessage(json_encode($response));
             $channel->basic_publish($badMessage, '', $message->get('reply_to'));
             echo "User $username already exists\n";
             $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
         } else {
-            // If the username doesn't exist, publish a "GOOD" message to RabbitMQ
-            $response = ["status" => "GOOD"];
+            $response = [
+                "status" => "GOOD"
+            ];
             $goodMessage = new AMQPMessage(json_encode($response));
             $channel->basic_publish($goodMessage, '', $message->get('reply_to'));
             $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
@@ -67,38 +69,41 @@ $channel->close();
 $connection->close();
 $mysqli->close();
 
+// Database functions
+
 // Check username function
-function checkUsername($username, $password, $fav_genre, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable) {
+function checkUser($username, $password, $fav_genre, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable) {
     // Establish MySQL connection
     $mysqli = new mysqli($mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
-
-    // Check for a successful connection
+    
     if ($mysqli->connect_error) {
         die("Connection to MySQL failed: " . $mysqli->connect_error);
     }
 
-    // Escape the username and password to prevent SQL injection
-    $escapedUsername = $mysqli->real_escape_string($username);
-    $escapedPassword = $mysqli->real_escape_string($password);
-
-    // Hash the password
-    $hashedPassword = password_hash($escapedPassword, PASSWORD_DEFAULT);
+    // Prepare a statement to check if the username exists
+    $query = "SELECT * FROM $mysqlTable WHERE username = ?";
+    $stmt = $mysqli->prepare($query);
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
+    $result = $stmt->get_result();
     
-    // Query the user table for the provided username
-    $query = "SELECT * FROM $mysqlTable WHERE username = '$escapedUsername'";
-    $result = $mysqli->query($query);
-    
-    // If the username exists return true
-    if ($result && $result->num_rows > 0) {
-        $result->free();
+    // If the username exists return true, else insert the user into the users table and return false
+    if ($result->num_rows > 0) {
+        $stmt->close();
+        $mysqli->close();
         return true;
+    } else {
+        $stmt->close();
+        
+        // Prepare a statement to insert the user with a hashed password
+        $insertQuery = "INSERT INTO $mysqlTable (username, password, fav_genre) VALUES (?, ?, ?)";
+        $insertStmt = $mysqli->prepare($insertQuery);
+        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+        $insertStmt->bind_param("sss", $username, $hashedPassword, $fav_genre);
+        $insertStmt->execute();
+        $insertStmt->close();
+        $mysqli->close();
+        return false;
     }
-    
-    // If the username doesn't exist insert the user into the users table and return false
-    $result->free();
-    $query = "INSERT INTO $mysqlTable (username, password, fav_genre) VALUES ('$escapedUsername', '$hashedPassword', '$fav_genre')";
-    $mysqli->query($query);
-    $mysqli->close();
-    return false;
 }
 ?>

@@ -1,19 +1,15 @@
 <?php
 session_start();
-// Check if the variable $_SESSION is set with the user's information
 if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'], $_SESSION['movies'])) {
-    // Set the user's information
-    $user_id = $_SESSION['user_id'];
+	$user_id = $_SESSION['user_id'];
 	$username = $_SESSION['username'];
-    $fav_genre = $_SESSION['fav_genre'];
-    $movies = $_SESSION['movies'];
+	$fav_genre = $_SESSION['fav_genre'];
+	$movies = $_SESSION['movies'];
 } else {
-    // If the user is not signed in, redirect them to the home page
     header('Location: signin.php');
     exit();
 }
 ?>
-
 
 <!DOCTYPE html>
 <html>
@@ -22,7 +18,7 @@ if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'], $
 </head>
 <body>
 	<header>
-		<h1>Recommendations Page</h1>
+		<h1>Recommendations</h1>
 	<nav>
 	<ul>
 		<li><a href="index.php">Home</a></li>
@@ -37,26 +33,15 @@ if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'], $
 	<main>
 	<section>
 		<h2>Recommendations</h2>
-		<p>This is the recommendations.</p>
-	</section>
-	</main>
-
-	<body>
-	<h1>User Profile</h1>
-        <p>User ID: <?php echo $user_id; ?></p>
-        <p>Username: <?php echo $username; ?></p>
-        <p>Favorite Genre: <?php echo $fav_genre; ?></p>
-
-        <h2>Top 10 Movies in Your Favorite Genre</h2>
-        <ul>
+		<ul>
             <?php
-            // Iterate through the movies array and display each movie title and genre
             foreach ($movies as $movie) {
                 echo '<li>' . $movie['title'] . ' - ' . $movie['year'] . ' - ' . $movie['genre'] . '</li>';
             }
             ?>
         </ul>
-	</body>
+	</section>
+	</main>
 
 	<footer>
 	<form method="post" action="publish_signout.php">

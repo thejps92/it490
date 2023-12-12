@@ -17,6 +17,7 @@
         <input type="submit" value="Submit">
     </form>
     <br>
-    <p>Not a user? <a href="signup.php">Click here.</a></p>
+    <p>Not a user? <a href="signup.php">Sign up</a></p>
+    <p>Go to the Home page -> <a href="index.php">Home</a></p>
 </body>
 </html>

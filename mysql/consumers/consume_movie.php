@@ -31,32 +31,28 @@ $callback = function ($message) use ($channel, $mysqlIP, $mysqlUsername, $mysqlP
     $movieData = json_decode($message->body, true);
     
     // Set the movie_id variable
-    if ($movieData && isset($movieData['movie_id'])) {
+    if (isset($movieData['movie_id'])) {
         $movieId = $movieData['movie_id'];
         
         // Get the movie and reviews for the movie_id
         $movie = getMovie($movieId, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlMoviesTable);
         $reviews = getMovieReviews($movieId, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlReviewsTable);
-        
         $response = [
             "status" => "GOOD",
             "movie" => $movie,
             "reviews" => $reviews
         ];
-        
         $goodMessage = new AMQPMessage(json_encode($response));
         $channel->basic_publish($goodMessage, '', $message->get('reply_to'));
         echo "Movie sent for Movie ID: $movieId\n";
         $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
     } else {
-        
         $response = [
             "status" => "BAD"
         ];
-        
         $badMessage = new AMQPMessage(json_encode($response));
         $channel->basic_publish($badMessage, '', $message->get('reply_to'));
-        echo "Bad";
+        echo "Bad request for Movie ID: $movieId\n";
         $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
     }
 };
@@ -73,54 +69,63 @@ while (count($channel->callbacks)) {
 $channel->close();
 $connection->close();
 
+// Database functions
+
 // Get movie function
 function getMovie($movieId, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlMoviesTable) {
     // Establish MySQL connection
     $mysqli = new mysqli($mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
-
-    // Check for a successful connection
+    
     if ($mysqli->connect_error) {
         die("Connection to MySQL failed: " . $mysqli->connect_error);
     }
 
-    // Query the movies table for the movie
-    $query = "SELECT * FROM $mysqlMoviesTable WHERE movie_id = $movieId";
+    // Prepare a statement to query the movies table for the movie
+    $query = "SELECT * FROM $mysqlMoviesTable WHERE movie_id = ?";
+    $stmt = $mysqli->prepare($query);
+    $stmt->bind_param("i", $movieId);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-    $result = $mysqli->query($query);
-
-    if ($result && $result->num_rows > 0) {
-        $movie = array();
+    // Check if any rows are returned and return the movie
+    if ($result->num_rows > 0) {
+        $movie = [];
 
         while ($row = $result->fetch_assoc()) {
             $movie[] = $row;
         }
 
         $result->free();
+        $stmt->close();
         $mysqli->close();
-        
         return $movie;
+    } else {
+        $stmt->close();
+        $mysqli->close();
+        return [];
     }
-
-    $mysqli->close();
-    return [];
 }
 
 // Get movie reviews function
 function getMovieReviews($movieId, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlReviewsTable) {
     $mysqli = new mysqli($mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
-
+    
     if ($mysqli->connect_error) {
         die("Connection to MySQL failed: " . $mysqli->connect_error);
     }
 
+    // Prepare a statement to query movie reviews, joining with users table to get usernames
     $query = "SELECT users.username, reviews.review, reviews.rating, reviews.review_date 
               FROM $mysqlReviewsTable AS reviews
               JOIN users ON reviews.user_id = users.user_id
-              WHERE reviews.movie_id = $movieId";
+              WHERE reviews.movie_id = ?";
+    $stmt = $mysqli->prepare($query);
+    $stmt->bind_param("i", $movieId);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-    $result = $mysqli->query($query);
-
-    if ($result && $result->num_rows > 0) {
+    // Check if any rows are returned and return the movie reviews
+    if ($result->num_rows > 0) {
         $reviews = [];
 
         while ($row = $result->fetch_assoc()) {
@@ -128,12 +133,13 @@ function getMovieReviews($movieId, $mysqlIP, $mysqlUsername, $mysqlPassword, $my
         }
 
         $result->free();
+        $stmt->close();
         $mysqli->close();
-
         return $reviews;
+    } else {
+        $stmt->close();
+        $mysqli->close();
+        return [];
     }
-
-    $mysqli->close();
-    return [];
 }
 ?>

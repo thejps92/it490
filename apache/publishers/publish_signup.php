@@ -13,7 +13,7 @@ $rabbitmqVHost = 'rmqsVHost';
 $rabbitmqMainQueue = 'signUpQueue';
 $rabbitmqReplyQueue = 'replySignUpQueue';
 
-// User input from the form
+// Data from the form
 $username = $_POST['username'];
 $password = $_POST['password'];
 $fav_genre = $_POST['fav_genre'];
@@ -25,23 +25,19 @@ $signupData = array(
     'fav_genre' => $fav_genre
 );
 
-// Convert the data to a JSON string
-$jsonSignupData = json_encode($signupData);
-
 // Establish RabbitMQ connection
 $connection = new AMQPStreamConnection($rabbitmqIP, $rabbitmqPort, $rabbitmqUsername, $rabbitmqPassword, $rabbitmqVHost);
 $channel = $connection->channel();
 $channel->queue_declare($rabbitmqMainQueue, false, true, false, false);
 
 // Create and publish the message to RabbitMQ
-$message = new AMQPMessage($jsonSignupData, ['reply_to' => $rabbitmqReplyQueue]);
+$message = new AMQPMessage(json_encode($signupData), ['reply_to' => $rabbitmqReplyQueue]);
 $channel->basic_publish($message, '', $rabbitmqMainQueue);
 
 // Close the RabbitMQ connection
 $channel->close();
 $connection->close();
 
-// Redirection logic
 // Establish RabbitMQ connection
 $connection = new AMQPStreamConnection($rabbitmqIP, $rabbitmqPort, $rabbitmqUsername, $rabbitmqPassword, $rabbitmqVHost);
 $channel = $connection->channel();
@@ -52,12 +48,10 @@ $callback = function ($message) use ($username) {
     $response = json_decode($message->body, true);
     
     if ($response['status'] === 'GOOD') {
-        // Redirect the user to the sign in page
         header('Location: signin.php');
         $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
         exit();
     } else {
-        // Alert the user of an error and either redirect them to the sign up page or the home page based on their selection
         echo "<script>
         var confirmation = confirm('Username already exists. Please try again.');
         if (confirmation) {

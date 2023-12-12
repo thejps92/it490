@@ -31,17 +31,16 @@ $callback = function ($message) use ($channel, $mysqlIP, $mysqlUsername, $mysqlP
     $signinData = json_decode($message->body, true);
     
     // Set the username and password variables
-    if (is_array($signinData) && isset($signinData['username'], $signinData['password'])) {
+    if (isset($signinData['username'], $signinData['password'])) {
         $username = $signinData['username'];
         $password = $signinData['password'];
         
         // Validate the username and password from the database
         $userInfo = validateUser($username, $password, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable);
-        if ($userInfo !== false) {
-            // If the username and password are valid in the database, publish a "GOOD" message to RabbitMQ
-            $movies = getTop10Movies($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable, $mysqlMoviesTable);
 
-            // Fetch user bookmarks
+        // Set the users recommended movies and bookmarks
+        if ($userInfo !== false) {
+            $movies = getRecMovies($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable, $mysqlMoviesTable);
             $bookmarks = getUserBookmarks($userInfo['user_id'], $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlMoviesTable);
 
             if ($movies !== false) {
@@ -65,7 +64,6 @@ $callback = function ($message) use ($channel, $mysqlIP, $mysqlUsername, $mysqlP
             echo "User $username successfully authenticated\n";
             $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
         } else {
-            // If the username and password are not valid in the database, publish a "BAD" message to RabbitMQ
             $badMessage = new AMQPMessage("BAD");
             $channel->basic_publish($badMessage, '', $message->get('reply_to'));
             echo "Incorrect username or password for user $username\n";
@@ -86,113 +84,122 @@ while (count($channel->callbacks)) {
 $channel->close();
 $connection->close();
 
+// Database functions
+
 // Validate user function
 function validateUser($username, $password, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable) {
     // Establish MySQL connection
     $mysqli = new mysqli($mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
     
-    // Check for a successful connection
     if ($mysqli->connect_error) {
         die("Connection to MySQL failed: " . $mysqli->connect_error);
     }
     
-    // Escape the username and password to prevent SQL injection
-    $escapedUsername = $mysqli->real_escape_string($username);
-    $escapedPassword = $mysqli->real_escape_string($password);
-    
-    // Query the user table for the provided username and password
-    $query = "SELECT * FROM $mysqlTable WHERE username = '$escapedUsername'";
-    $result = $mysqli->query($query);
+    // Prepare a statement to retrieve user data based on username
+    $query = "SELECT * FROM $mysqlTable WHERE username = ?";
+    $stmt = $mysqli->prepare($query);
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
+    $result = $stmt->get_result();
     $row = $result->fetch_assoc();
     
-    // If the username and password match return true
-    if (password_verify($escapedPassword, $row['password'])) {
+    // Check if username exists and if the password matches
+    if (password_verify($password, $row['password'])) {
         $user_id = $row['user_id'];
         $username = $row['username'];
         $fav_genre = $row['fav_genre'];
-        $result->free();
+        $stmt->close();
         $mysqli->close();
         return ['user_id' => $user_id, 'username' => $username, 'fav_genre' => $fav_genre];
     } else {
-    // If the username and password don't match return false
+        $stmt->close();
         $mysqli->close();
         return false;
     }
 }
 
-// Get top 10 movies function
-function getTop10Movies($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable, $mysqlMoviesTable) {
-    // Establish MySQL connection and retrieve the user's favorite genre
+// Get recommended movies function
+function getRecMovies($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable, $mysqlMoviesTable) {
+    // Establish MySQL connection
     $mysqli = new mysqli($mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
-
-    // Check for a successful connection
+    
     if ($mysqli->connect_error) {
         die("Connection to MySQL failed: " . $mysqli->connect_error);
     }
 
-    // Retrieve the user's favorite genre from the user table
-    $query = "SELECT fav_genre FROM $mysqlTable WHERE username = '$username'";
-    $result = $mysqli->query($query);
+    // Prepare a statement to get the user's favorite genre from the users table
+    $query = "SELECT fav_genre FROM $mysqlTable WHERE username = ?";
+    $stmt = $mysqli->prepare($query);
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-    if ($result && $result->num_rows === 1) {
+    // If the user has a favorite genre, use it to query for the top 10 movies of that genre
+    if ($result->num_rows === 1) {
         $row = $result->fetch_assoc();
         $favGenre = $row['fav_genre'];
         $result->free();
+        $stmt->close();
 
-        // Use the retrieved favGenre to query for top 10 movies
-        $query = "SELECT title, year, genre FROM $mysqlMoviesTable WHERE genre LIKE '%$favGenre%' LIMIT 10";
-        $result = $mysqli->query($query);
+        // Prepare a statement to get movies based on the genre
+        $movieQuery = "SELECT title, year, genre FROM $mysqlMoviesTable WHERE genre LIKE '%$favGenre%' LIMIT 10";
+        $movieStmt = $mysqli->prepare($movieQuery);
+        $movieStmt->execute();
 
-        if ($result && $result->num_rows > 0) {
+        // Get the result
+        $movieResult = $movieStmt->get_result();
+
+        if ($movieResult->num_rows > 0) {
             $movies = [];
-            while ($row = $result->fetch_assoc()) {
+            while ($row = $movieResult->fetch_assoc()) {
                 $movies[] = $row;
             }
-            $result->free();
+            $movieResult->free();
+            $movieStmt->close();
             $mysqli->close();
             return $movies;
         }
+    } else {
+        // Close connections and return an empty array if no movies found or user not found
+        $mysqli->close();
+        return [];
     }
-
-    $mysqli->close();
-    return [];
 }
 
 // Get user bookmarks function
 function getUserBookmarks($user_id, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlMoviesTable) {
     // Establish MySQL connection
     $mysqli = new mysqli($mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
-
-    // Check for a successful connection
+    
     if ($mysqli->connect_error) {
         die("Connection to MySQL failed: " . $mysqli->connect_error);
     }
 
-    // Escape the user_id to prevent SQL injection
-    $escapedUserID = $mysqli->real_escape_string($user_id);
-
-    // Query the bookmarks table, joining with the movies table to get movie details
+    // Prepare a statement to query the bookmarks table, joining with the movies table to get movie details
     $query = "SELECT M.* FROM bookmarks AS B
               JOIN $mysqlMoviesTable AS M ON B.movie_id = M.movie_id
-              WHERE B.user_id = '$escapedUserID'";
+              WHERE B.user_id = ?";
+    $stmt = $mysqli->prepare($query);
+    $stmt->bind_param("s", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-    $result = $mysqli->query($query);
+    // If there are bookmarks, store them in an array
+    if ($result->num_rows > 0) {
+        $bookmarks = [];
 
-    if ($result && $result->num_rows > 0) {
-        $bookmarks = array();
-
-        // Fetch all user's bookmarks with movie details
         while ($row = $result->fetch_assoc()) {
             $bookmarks[] = $row;
         }
 
         $result->free();
+        $stmt->close();
         $mysqli->close();
-
         return $bookmarks;
+    } else {
+        $stmt->close();
+        $mysqli->close();
+        return [];
     }
-
-    $mysqli->close();
-    return [];
 }
 ?>
