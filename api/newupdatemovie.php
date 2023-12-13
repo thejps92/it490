@@ -17,9 +17,8 @@ $client = new \GuzzleHttp\Client();
 
 // Your TMDb API key
 $apiKey = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJlOThkYTBjNGQxMjM3MDE5OWEzNGQ1YTdjY2M5MWMyOCIsInN1YiI6IjY1NGFjMmRkNjdiNjEzMDEwMmUxM2U2YiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.ZHkeqy2Qtw8tZmaxeWU-fKeCC5eY7XAWuaX-i-nOC00';
-
 // Initialize the page number
-$page = 400;
+$page = 401;
 
 // Loop through all 200 pages (adjust as needed)
 while ($page <= 500) {
@@ -64,6 +63,31 @@ while ($page <= 500) {
             $genres = array_column($movieDetails['genres'], 'name');
             $genreString = implode(', ', $genres);
 
+            // Fetch watch providers data
+            $watchProvidersResponse = $client->request('GET', "https://api.themoviedb.org/3/movie/$movieId/watch/providers", [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $apiKey,
+                    'accept' => 'application/json',
+                ],
+            ]);
+            $watchProvidersData = json_decode($watchProvidersResponse->getBody(), true);
+            $watchProviders = $watchProvidersData['results']['US']['buy'] ?? [];
+            $topProviders = [];
+
+            // Get the names of the top three watch providers
+            $count = 0;
+            foreach ($watchProviders as $provider) {
+                if ($count >= 3) {
+                    break;
+                }
+
+                $providerName = $provider['provider_name'];
+                $topProviders[] = $providerName;
+                $count++;
+            }
+
+            $watchProvidersString = implode(', ', $topProviders);
+
             // Fetch the movie credits
             $response = $client->request('GET', "https://api.themoviedb.org/3/movie/$movieId/credits", [
                 'headers' => [
@@ -87,7 +111,7 @@ while ($page <= 500) {
             }
 
             // Prepare an INSERT statement
-            $stmt = $db->prepare("INSERT INTO movies (id, title, overview, release_date, runtime, director, main_actor, genre) VALUES (:id, :title, :overview, :release_date, :runtime, :director, :main_actor, :genre)");
+            $stmt = $db->prepare("INSERT INTO movies (id, title, overview, release_date, runtime, director, main_actor, genre, watch_providers) VALUES (:id, :title, :overview, :release_date, :runtime, :director, :main_actor, :genre, :watch_providers)");
 
             // Bind the parameters
             $stmt->bindParam(':id', $movieId);
@@ -98,6 +122,7 @@ while ($page <= 500) {
             $stmt->bindParam(':director', $director);
             $stmt->bindParam(':main_actor', $mainActor);
             $stmt->bindParam(':genre', $genreString);
+            $stmt->bindParam(':watch_providers', $watchProvidersString);
 
             // Execute the statement
             $stmt->execute();
@@ -113,4 +138,3 @@ while ($page <= 500) {
 
 echo "All movies inserted into the database.";
 ?>
-
