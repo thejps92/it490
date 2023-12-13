@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS movies (
     runtime INT,
     director VARCHAR(255),
     main_actor VARCHAR(255),
-    genre VARCHAR(255)
+    genre VARCHAR(255),
+    watch_providers TEXT
 );
 
