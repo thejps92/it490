@@ -10,21 +10,21 @@ $rabbitmqPort = 5672;
 $rabbitmqUsername = 'rmqsUser';
 $rabbitmqPassword = 'Password123';
 $rabbitmqVHost = 'rmqsVHost';
-$rabbitmqMainQueue = 'bookmarkQueue';
-$rabbitmqReplyQueue = 'replyBookmarkQueue';
+$rabbitmqMainQueue = 'friendQueue';
+$rabbitmqReplyQueue = 'replyFriendQueue';
 
 // Data from the button click
-$bookmarkData = json_decode(file_get_contents('php://input'), true);
+$friendData = json_decode(file_get_contents('php://input'), true);
 
 // Send the data to RabbitMQ
-if (isset($bookmarkData['user_id'], $bookmarkData['movie_id'])) {
+if (isset($friendData['action'])) {
     // Establish RabbitMQ connection
     $connection = new AMQPStreamConnection($rabbitmqIP, $rabbitmqPort, $rabbitmqUsername, $rabbitmqPassword, $rabbitmqVHost);
     $channel = $connection->channel();
     $channel->queue_declare($rabbitmqMainQueue, false, true, false, false);
 
     // Create and publish the message to RabbitMQ
-    $message = new AMQPMessage(json_encode($bookmarkData), ['reply_to' => $rabbitmqReplyQueue]);
+    $message = new AMQPMessage(json_encode($friendData), ['reply_to' => $rabbitmqReplyQueue]);
     $channel->basic_publish($message, '', $rabbitmqMainQueue);
 
     // Close the RabbitMQ connection
@@ -44,14 +44,29 @@ $channel->queue_declare($rabbitmqReplyQueue, false, true, false, false);
 $callback = function ($message) {
     $response = json_decode($message->body, true);
     
-    if ($response['status'] === 'GOOD') {
+    if ($response['status'] === 'GOOD' && $response['reason'] === 'Deleted') {
         session_start();
-        $_SESSION['bookmarks'] = $response['bookmarks'];
+        $_SESSION['outgoing_friend_requests'] = $response['outgoing_friend_requests'];
         http_response_code(200);
         $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
         exit();
-    } else {
-        http_response_code(401);
+    } elseif ($response['status'] === 'GOOD' && $response['reason'] === 'Accepted') {
+        session_start();
+        $_SESSION['friends'] = $response['friends'];
+        $_SESSION['incoming_friend_requests'] = $response['incoming_friend_requests'];
+        http_response_code(200);
+        $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
+        exit();
+    } elseif ($response['status'] === 'GOOD' && $response['reason'] === 'Declined') {
+        session_start();
+        $_SESSION['incoming_friend_requests'] = $response['incoming_friend_requests'];
+        http_response_code(200);
+        $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
+        exit();
+    } elseif ($response['status'] === 'GOOD' && $response['reason'] === 'Removed') {
+        session_start();
+        $_SESSION['friends'] = $response['friends'];
+        http_response_code(200);
         $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
         exit();
     }

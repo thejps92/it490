@@ -16,6 +16,7 @@
         <br><br>
         <label for="fav_genre">Favorite Genre:</label>
         <select name="fav_genre" id="fav_genre" required>
+            <option value="" disabled selected>Select genre...</option>
             <option value="action">Action</option>
             <option value="comedy">Comedy</option>
             <option value="romance">Romance</option>

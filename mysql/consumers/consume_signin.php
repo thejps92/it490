@@ -17,7 +17,7 @@ $mysqlIP = '127.0.0.1';
 $mysqlUsername = 'root';
 $mysqlPassword = 'root';
 $mysqlDatabase = 'newdb';
-$mysqlTable = 'users';
+$mysqlUsersTable = 'users';
 $mysqlMoviesTable = 'movies';
 
 // Establish RabbitMQ connection
@@ -27,7 +27,7 @@ $channel->queue_declare($rabbitmqMainQueue, false, true, false, false);
 echo "Waiting for messages. To exit, press Ctrl+C\n";
 
 // Callback function
-$callback = function ($message) use ($channel, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable, $mysqlMoviesTable) {
+$callback = function ($message) use ($channel, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlUsersTable, $mysqlMoviesTable) {
     $signinData = json_decode($message->body, true);
     
     // Set the username and password variables
@@ -36,35 +36,35 @@ $callback = function ($message) use ($channel, $mysqlIP, $mysqlUsername, $mysqlP
         $password = $signinData['password'];
         
         // Validate the username and password from the database
-        $userInfo = validateUser($username, $password, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable);
+        $userInfo = validateUser($username, $password, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlUsersTable);
 
-        // Set the users recommended movies and bookmarks
-        if ($userInfo !== false) {
-            $movies = getRecMovies($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable, $mysqlMoviesTable);
+        // Set the users recommended movies, bookmarks, friends, and friend requests
+        if ($userInfo) {
+            $movies = getRecMovies($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlUsersTable, $mysqlMoviesTable);
             $bookmarks = getUserBookmarks($userInfo['user_id'], $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlMoviesTable);
-
-            if ($movies !== false) {
-                $response = [
-                    "status" => "GOOD",
-                    "user_info" => $userInfo,
-                    "movies" => $movies,
-                    "bookmarks" => $bookmarks
-                ];
-            } else {
-                $response = [
-                    "status" => "GOOD",
-                    "user_info" => $userInfo,
-                    "movies" => [],
-                    "bookmarks" => $bookmarks
-                ];
-            }
+            $friends = getUserFriends($userInfo['user_id'], $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
+            $outgoing_friend_requests = getOutgoingFriendRequests($userInfo['user_id'], $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
+            $incoming_friend_requests = getIncomingFriendRequests($userInfo['user_id'], $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
+            $response = [
+                "status" => "GOOD",
+                "user_info" => $userInfo,
+                "movies" => $movies,
+                "bookmarks" => $bookmarks,
+                "friends" => $friends,
+                "outgoing_friend_requests" => $outgoing_friend_requests,
+                "incoming_friend_requests" => $incoming_friend_requests
+            ];
 
             $goodMessage = new AMQPMessage(json_encode($response));
             $channel->basic_publish($goodMessage, '', $message->get('reply_to'));
             echo "User $username successfully authenticated\n";
             $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
         } else {
-            $badMessage = new AMQPMessage("BAD");
+            $response = [
+                "status" => "BAD",
+            ];
+
+            $badMessage = new AMQPMessage(json_encode($response));
             $channel->basic_publish($badMessage, '', $message->get('reply_to'));
             echo "Incorrect username or password for user $username\n";
             $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
@@ -87,7 +87,7 @@ $connection->close();
 // Database functions
 
 // Validate user function
-function validateUser($username, $password, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable) {
+function validateUser($username, $password, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlUsersTable) {
     // Establish MySQL connection
     $mysqli = new mysqli($mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
     
@@ -96,7 +96,7 @@ function validateUser($username, $password, $mysqlIP, $mysqlUsername, $mysqlPass
     }
     
     // Prepare a statement to retrieve user data based on username
-    $query = "SELECT * FROM $mysqlTable WHERE username = ?";
+    $query = "SELECT * FROM $mysqlUsersTable WHERE username = ?";
     $stmt = $mysqli->prepare($query);
     $stmt->bind_param("s", $username);
     $stmt->execute();
@@ -119,7 +119,7 @@ function validateUser($username, $password, $mysqlIP, $mysqlUsername, $mysqlPass
 }
 
 // Get recommended movies function
-function getRecMovies($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable, $mysqlMoviesTable) {
+function getRecMovies($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlUsersTable, $mysqlMoviesTable) {
     // Establish MySQL connection
     $mysqli = new mysqli($mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
     
@@ -128,7 +128,7 @@ function getRecMovies($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysq
     }
 
     // Prepare a statement to get the user's favorite genre from the users table
-    $query = "SELECT fav_genre FROM $mysqlTable WHERE username = ?";
+    $query = "SELECT fav_genre FROM $mysqlUsersTable WHERE username = ?";
     $stmt = $mysqli->prepare($query);
     $stmt->bind_param("s", $username);
     $stmt->execute();
@@ -145,8 +145,6 @@ function getRecMovies($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysq
         $movieQuery = "SELECT title, year, genre FROM $mysqlMoviesTable WHERE genre LIKE '%$favGenre%' LIMIT 10";
         $movieStmt = $mysqli->prepare($movieQuery);
         $movieStmt->execute();
-
-        // Get the result
         $movieResult = $movieStmt->get_result();
 
         if ($movieResult->num_rows > 0) {
@@ -154,15 +152,17 @@ function getRecMovies($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysq
             while ($row = $movieResult->fetch_assoc()) {
                 $movies[] = $row;
             }
+
             $movieResult->free();
             $movieStmt->close();
             $mysqli->close();
             return $movies;
         }
     } else {
-        // Close connections and return an empty array if no movies found or user not found
+        $movies = [];
+        $movieStmt->close();
         $mysqli->close();
-        return [];
+        return $movies;
     }
 }
 
@@ -187,7 +187,6 @@ function getUserBookmarks($user_id, $mysqlIP, $mysqlUsername, $mysqlPassword, $m
     // If there are bookmarks, store them in an array
     if ($result->num_rows > 0) {
         $bookmarks = [];
-
         while ($row = $result->fetch_assoc()) {
             $bookmarks[] = $row;
         }
@@ -197,9 +196,127 @@ function getUserBookmarks($user_id, $mysqlIP, $mysqlUsername, $mysqlPassword, $m
         $mysqli->close();
         return $bookmarks;
     } else {
+        $bookmarks = [];
         $stmt->close();
         $mysqli->close();
-        return [];
+        return $bookmarks;
+    }
+}
+
+function getUserFriends($user_id, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase) {
+    // Establish MySQL connection
+    $mysqli = new mysqli($mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
+    
+    if ($mysqli->connect_error) {
+        die("Connection to MySQL failed: " . $mysqli->connect_error);
+    }
+
+    // Prepare a statement to query the friends table
+    $query = "SELECT users.user_id, users.username
+            FROM friends
+            JOIN users ON (friends.user1_id = users.user_id OR friends.user2_id = users.user_id)
+            WHERE (friends.user1_id = ? OR friends.user2_id = ?)
+            AND users.user_id != ?";
+    $stmt = $mysqli->prepare($query);
+    $stmt->bind_param("iii", $user_id, $user_id, $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    // If there are friends, store them in an array
+    if ($result->num_rows > 0) {
+        $friends = [];
+
+        while ($row = $result->fetch_assoc()) {
+            $friends[] = $row;
+        }
+
+        $result->free();
+        $stmt->close();
+        $mysqli->close();
+        return $friends;
+    } else {
+        $friends = [];
+        $stmt->close();
+        $mysqli->close();
+        return $friends;
+    }
+}
+
+// Get outgoing friend requests function
+function getOutgoingFriendRequests($user_id, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase) {
+    // Establish MySQL connection
+    $mysqli = new mysqli($mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
+
+    if ($mysqli->connect_error) {
+        die("Connection to MySQL failed: " . $mysqli->connect_error);
+    }
+
+    // Prepare a statement to query the friend requests table, joining with the users table to get usernames
+    $query = "SELECT friend_requests.receiver_id, users.username
+            FROM friend_requests
+            INNER JOIN users ON friend_requests.receiver_id = users.user_id
+            WHERE friend_requests.sender_id = ?";
+    $stmt = $mysqli->prepare($query);
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    // Check if any rows are returned and return the outgoing friend requests
+    if ($result->num_rows > 0) {
+        $outgoing_friend_requests = [];
+
+        while ($row = $result->fetch_assoc()) {
+            $outgoing_friend_requests[] = $row;
+        }
+
+        $result->free();
+        $stmt->close();
+        $mysqli->close();
+        return $outgoing_friend_requests;
+    } else {
+        $outgoing_friend_requests = [];
+        $stmt->close();
+        $mysqli->close();
+        return $outgoing_friend_requests;
+    }
+}
+
+// Get incoming friend requests function
+function getIncomingFriendRequests($user_id, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase) {
+    // Establish MySQL connection
+    $mysqli = new mysqli($mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
+
+    if ($mysqli->connect_error) {
+        die("Connection to MySQL failed: " . $mysqli->connect_error);
+    }
+
+    // Prepare a statement to query the friend requests table, joining with the users table to get usernames
+    $query = "SELECT friend_requests.sender_id, users.username
+            FROM friend_requests
+            INNER JOIN users ON friend_requests.sender_id = users.user_id
+            WHERE friend_requests.receiver_id = ?";
+    $stmt = $mysqli->prepare($query);
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    // Check if any rows are returned and return the incoming friend requests
+    if ($result->num_rows > 0) {
+        $incoming_friend_requests = [];
+
+        while ($row = $result->fetch_assoc()) {
+            $incoming_friend_requests[] = $row;
+        }
+
+        $result->free();
+        $stmt->close();
+        $mysqli->close();
+        return $incoming_friend_requests;
+    } else {
+        $incoming_friend_requests = [];
+        $stmt->close();
+        $mysqli->close();
+        return $incoming_friend_requests;
     }
 }
 ?>

@@ -10,30 +10,31 @@ $rabbitmqPort = 5672;
 $rabbitmqUsername = 'rmqsUser';
 $rabbitmqPassword = 'Password123';
 $rabbitmqVHost = 'rmqsVHost';
-$rabbitmqMainQueue = 'bookmarkQueue';
-$rabbitmqReplyQueue = 'replyBookmarkQueue';
+$rabbitmqMainQueue = 'usersQueue';
+$rabbitmqReplyQueue = 'replyUsersQueue';
 
-// Data from the button click
-$bookmarkData = json_decode(file_get_contents('php://input'), true);
+// Data from the form
+$user_id = $_POST['user_id'];
+$searchQuery = $_POST['searchQuery'];
 
-// Send the data to RabbitMQ
-if (isset($bookmarkData['user_id'], $bookmarkData['movie_id'])) {
-    // Establish RabbitMQ connection
-    $connection = new AMQPStreamConnection($rabbitmqIP, $rabbitmqPort, $rabbitmqUsername, $rabbitmqPassword, $rabbitmqVHost);
-    $channel = $connection->channel();
-    $channel->queue_declare($rabbitmqMainQueue, false, true, false, false);
+// Create an associative array with the data
+$searchData = array(
+    'user_id' => $user_id,
+    'searchQuery' => $searchQuery
+);
 
-    // Create and publish the message to RabbitMQ
-    $message = new AMQPMessage(json_encode($bookmarkData), ['reply_to' => $rabbitmqReplyQueue]);
-    $channel->basic_publish($message, '', $rabbitmqMainQueue);
+// Establish RabbitMQ connection
+$connection = new AMQPStreamConnection($rabbitmqIP, $rabbitmqPort, $rabbitmqUsername, $rabbitmqPassword, $rabbitmqVHost);
+$channel = $connection->channel();
+$channel->queue_declare($rabbitmqMainQueue, false, true, false, false);
 
-    // Close the RabbitMQ connection
-    $channel->close();
-    $connection->close();
-} else {
-    // Post a 400 HTTP response code to indicate a bad request
-    http_response_code(400);
-}
+// Create and publish the message to RabbitMQ
+$message = new AMQPMessage(json_encode($searchData), ['reply_to' => $rabbitmqReplyQueue]);
+$channel->basic_publish($message, '', $rabbitmqMainQueue);
+
+// Close the RabbitMQ connection
+$channel->close();
+$connection->close();
 
 // Establish RabbitMQ connection
 $connection = new AMQPStreamConnection($rabbitmqIP, $rabbitmqPort, $rabbitmqUsername, $rabbitmqPassword, $rabbitmqVHost);
@@ -44,14 +45,14 @@ $channel->queue_declare($rabbitmqReplyQueue, false, true, false, false);
 $callback = function ($message) {
     $response = json_decode($message->body, true);
     
-    if ($response['status'] === 'GOOD') {
+    if ($response['status']) {
         session_start();
-        $_SESSION['bookmarks'] = $response['bookmarks'];
-        http_response_code(200);
+        $_SESSION['users'] = $response['users'];
+        header('Location: user_results.php');
         $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
         exit();
     } else {
-        http_response_code(401);
+        header('Location: error.php');
         $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
         exit();
     }

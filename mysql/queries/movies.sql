@@ -1,6 +1,6 @@
 CREATE TABLE movies (
-    movie_id int NOT NULL PRIMARY KEY AUTO_INCREMENT,
-    title varchar(255) NOT NULL,
-    year int NOT NULL,
-    genre varchar(255) NOT NULL
+    movie_id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(255) NOT NULL,
+    year INT NOT NULL,
+    genre VARCHAR(255) NOT NULL
 );

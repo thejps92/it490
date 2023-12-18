@@ -52,6 +52,9 @@ $callback = function ($message) {
         $_SESSION['fav_genre'] = $response['user_info']['fav_genre'];
         $_SESSION['movies'] = $response['movies'];
         $_SESSION['bookmarks'] = $response['bookmarks'];
+        $_SESSION['friends'] = $response['friends'];
+        $_SESSION['outgoing_friend_requests'] = $response['outgoing_friend_requests'];
+        $_SESSION['incoming_friend_requests'] = $response['incoming_friend_requests'];
         $newSessionToken = session_id();
         header('Location: index.php');
         $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);

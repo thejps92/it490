@@ -43,8 +43,10 @@ if (isset($_SESSION['movieDetails'])) {
                     echo '</li>';
                 }
                 echo '</ul>';
+                unset($_SESSION['movieDetails']);
             } else {
                 echo 'No results found.';
+                unset($_SESSION['movieDetails']);
             }
             ?>
         </section>

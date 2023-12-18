@@ -1,6 +1,6 @@
 CREATE TABLE users (
-    user_id int NOT NULL PRIMARY KEY AUTO_INCREMENT,
-    username varchar(255) NOT NULL,
-    password varchar(255) NOT NULL,
-    fav_genre varchar(255) NOT NULL
+    user_id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    fav_genre VARCHAR(255) NOT NULL
 );

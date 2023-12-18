@@ -45,7 +45,7 @@ $channel->queue_declare($rabbitmqReplyQueue, false, true, false, false);
 $callback = function ($message) {
     $response = json_decode($message->body, true);
     
-    if ($response['status'] === 'GOOD') {
+    if ($response['status']) {
         session_start();
         $_SESSION['movieDetails'] = $response['movieDetails'];
         header('Location: search_results.php');

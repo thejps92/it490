@@ -7,6 +7,9 @@ if (isset($_SESSION['user_id'])) {
 if (isset($_SESSION['movie'], $_SESSION['reviews'])) {
     $movie = $_SESSION['movie'];
     $reviews = $_SESSION['reviews'];
+} else {
+    header('Location: index.php');
+    exit();
 }
 ?>
 
@@ -40,8 +43,10 @@ if (isset($_SESSION['movie'], $_SESSION['reviews'])) {
                     echo '<strong>Genre:</strong> ' . $item['genre'] . '<br>';
                     echo '<button class="bookmark" userid="' . $user_id . '" movieid="' . $item['movie_id'] . '">Bookmark</button>';
                 }
+                unset($_SESSION['movie']);
             } else {
                 echo 'No movie details available.';
+                unset($_SESSION['movie']);
             }
             ?>
         </section>
@@ -61,8 +66,10 @@ if (isset($_SESSION['movie'], $_SESSION['reviews'])) {
                     echo '</tr>';
                 }
                 echo '</table>';
+                unset($_SESSION['reviews']);
             } else {
                 echo 'No reviews available.';
+                unset($_SESSION['reviews']);
             }
             ?>
         </section>
@@ -125,17 +132,19 @@ if (isset($_SESSION['movie'], $_SESSION['reviews'])) {
                     }
                 })
                 .then(response => {
-                    if (response.ok) {
-                        alert('Movie bookmarked successfully!');
-                    } else {
-                        alert('Bookmarking failed.');
+                    if (response.status === 200) {
+                        alert('Movie bookmarked successfully');
+                    } else if (response.status === 401) {
+                        alert('Bookmark already exists');
+                    } else if (response.status === 400) {
+                        alert('Bookmark failed')
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
                 });
             } else {
-                alert('Please sign in to bookmark movies.');
+                alert('Please sign in to bookmark movies');
             }
         }
     });

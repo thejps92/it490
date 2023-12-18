@@ -21,8 +21,9 @@
         <section>
             <h2>Search Movies</h2>
             <form method="post" action="publish_search.php">
-                <input type="text" name="searchQuery" placeholder="Search movies...">
-                <select name="searchType">
+                <input type="text" name="searchQuery" placeholder="Search movies..." required>
+                <select name="searchType" required>
+                    <option value="" disabled selected>Select search type...</option>
                     <option value="title">Title</option>
                     <option value="year">Year</option>
                     <option value="genre">Genre</option>

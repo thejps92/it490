@@ -53,7 +53,7 @@ $callback = function ($message) use ($channel, $mysqlIP, $mysqlUsername, $mysqlP
             ];
             $badMessage = new AMQPMessage(json_encode($response));
             $channel->basic_publish($badMessage, '', $message->get('reply_to'));
-            echo "Bookmark already exists";
+            echo "Bookmark already exists" . "\n";
             $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
         }
     }
