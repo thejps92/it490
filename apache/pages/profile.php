@@ -1,8 +1,9 @@
 <?php
 session_start();
-if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'])) {
+if (isset($_SESSION['user_id'])) {
 	$user_id = $_SESSION['user_id'];
 	$username = $_SESSION['username'];
+	$email = $_SESSION['email'];
 	$fav_genre = $_SESSION['fav_genre'];
 } else {
     header('Location: signin.php');
@@ -32,9 +33,10 @@ if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'])) 
 	<main>
 	<section>
 		<h2>Profile</h2>
-		<p>User ID: <?php echo $user_id; ?></p>
-		<p>Username: <?php echo $username; ?></p>
-		<p>Favorite Genre: <?php echo $fav_genre; ?></p>
+		<p>User ID: <strong><?php echo $user_id; ?></strong></p>
+		<p>Username: <strong><?php echo $username; ?></strong></p>
+		<p>Email: <strong><?php echo $email; ?></strong></p>
+		<p>Favorite Genre: <strong><?php echo $fav_genre; ?></strong></p>
 	</section>
 	</main>
 

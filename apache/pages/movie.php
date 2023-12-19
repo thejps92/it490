@@ -45,7 +45,7 @@ if (isset($_SESSION['movie'], $_SESSION['reviews'])) {
                 }
                 unset($_SESSION['movie']);
             } else {
-                echo 'No movie details available.';
+                echo '<p>No movie details available.</p>';
                 unset($_SESSION['movie']);
             }
             ?>
@@ -68,7 +68,7 @@ if (isset($_SESSION['movie'], $_SESSION['reviews'])) {
                 echo '</table>';
                 unset($_SESSION['reviews']);
             } else {
-                echo 'No reviews available.';
+                echo '<p>No reviews available.</p>';
                 unset($_SESSION['reviews']);
             }
             ?>
@@ -102,10 +102,10 @@ if (isset($_SESSION['movie'], $_SESSION['reviews'])) {
                         ';
                     }
                 } else {
-                    echo 'Unable to write a review.';
+                    echo '<p>Unable to write a review.</p>';
                 }
             } else {
-                echo 'Please <a href="signin.php">sign in</a> to write a review.';
+                echo '<p>Please <a href="signin.php">sign in</a> to write a review.</p>';
             }
             ?>
         </section>
@@ -133,18 +133,18 @@ if (isset($_SESSION['movie'], $_SESSION['reviews'])) {
                 })
                 .then(response => {
                     if (response.status === 200) {
-                        alert('Movie bookmarked successfully');
+                        alert('Movie bookmarked.');
                     } else if (response.status === 401) {
-                        alert('Bookmark already exists');
+                        alert('Bookmark already exists.');
                     } else if (response.status === 400) {
-                        alert('Bookmark failed')
+                        alert('Bookmark failed.')
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
                 });
             } else {
-                alert('Please sign in to bookmark movies');
+                alert('Please sign in to bookmark movies.');
             }
         }
     });

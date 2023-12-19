@@ -45,7 +45,7 @@ if (isset($_SESSION['movieDetails'])) {
                 echo '</ul>';
                 unset($_SESSION['movieDetails']);
             } else {
-                echo 'No results found.';
+                echo '<p>No results found.</p>';
                 unset($_SESSION['movieDetails']);
             }
             ?>

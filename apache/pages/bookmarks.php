@@ -1,9 +1,7 @@
 <?php
 session_start();
-if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'])) {
+if (isset($_SESSION['user_id'])) {
 	$user_id = $_SESSION['user_id'];
-	$username = $_SESSION['username'];
-	$fav_genre = $_SESSION['fav_genre'];
 	$bookmarks = $_SESSION['bookmarks'];
 } else {
     header('Location: signin.php');
@@ -75,9 +73,9 @@ if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'])) 
             })
             .then(response => {
                 if (response.status === 200) {
-                    alert('Bookmark removed');
+                    alert('Bookmark removed.');
                 } else if (response.status === 400 || response.status === 401) {
-                    alert('Removing bookmark failed')
+                    alert('Removing bookmark failed.')
                 }
             })
             .catch(error => {

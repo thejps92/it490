@@ -14,6 +14,9 @@
         <label for="password">Password:</label>
         <input type="password" id="password" name="password" required>
         <br><br>
+        <label for="email">Email:</label>
+        <input type="text" id="email" name ="email" required>
+        <br><br>
         <label for="fav_genre">Favorite Genre:</label>
         <select name="fav_genre" id="fav_genre" required>
             <option value="" disabled selected>Select genre...</option>

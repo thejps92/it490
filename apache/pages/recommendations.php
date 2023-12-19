@@ -1,9 +1,7 @@
 <?php
 session_start();
-if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'], $_SESSION['movies'])) {
+if (isset($_SESSION['user_id'])) {
 	$user_id = $_SESSION['user_id'];
-	$username = $_SESSION['username'];
-	$fav_genre = $_SESSION['fav_genre'];
 	$movies = $_SESSION['movies'];
 } else {
     header('Location: signin.php');
@@ -33,13 +31,22 @@ if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'], $
 	<main>
 	<section>
 		<h2>Recommendations</h2>
-		<ul>
-            <?php
-            foreach ($movies as $movie) {
-                echo '<li>' . $movie['title'] . ' - ' . $movie['year'] . ' - ' . $movie['genre'] . '</li>';
-            }
-            ?>
-        </ul>
+		<?php
+		if (!empty($movies)) {
+			echo '<table>';
+			echo '<tr><th>Title</th><th>Year</th><th>Genre</th></tr>';
+			foreach ($movies as $movie) {
+				echo '<tr>';
+				echo '<td>' . $movie['title'] . '</td>';
+				echo '<td>' . $movie['year'] . '</td>';
+				echo '<td>' . $movie['genre'] . '</td>';
+				echo '</tr>';
+			}
+			echo '</table>';
+		} else {
+			echo '<p>No recommended movies available.</p>';
+		}
+		?>
 	</section>
 	</main>
 

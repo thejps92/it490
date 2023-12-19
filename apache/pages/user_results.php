@@ -46,7 +46,7 @@ if (isset($_SESSION['users'])) {
                 echo '</ul>';
                 unset($_SESSION['users']);
             } else {
-                echo 'No results found.';
+                echo '<p>No results found.</p>';
                 unset($_SESSION['users']);
             }
             ?>
@@ -73,13 +73,13 @@ if (isset($_SESSION['users'])) {
             })
             .then(response => {
                 if (response.status === 200) {
-                    alert('Friend request sent');
+                    alert('Friend request sent.');
                 } else if (response.status === 401) {
-                    alert('User already has a pending friend request from you');
+                    alert('User already has a pending friend request from you.');
                 } else if (response.status === 403) {
-                    alert('User is already your friend');
+                    alert('User is already your friend.');
                 } else if (response.status === 400) {
-                    alert('Friend request failed');
+                    alert('Friend request failed.');
                 }
             })
             .catch(error => {

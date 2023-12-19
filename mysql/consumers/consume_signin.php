@@ -107,10 +107,11 @@ function validateUser($username, $password, $mysqlIP, $mysqlUsername, $mysqlPass
     if (password_verify($password, $row['password'])) {
         $user_id = $row['user_id'];
         $username = $row['username'];
+        $email = $row['email'];
         $fav_genre = $row['fav_genre'];
         $stmt->close();
         $mysqli->close();
-        return ['user_id' => $user_id, 'username' => $username, 'fav_genre' => $fav_genre];
+        return ['user_id' => $user_id, 'username' => $username, 'email' => $email, 'fav_genre' => $fav_genre];
     } else {
         $stmt->close();
         $mysqli->close();

@@ -49,6 +49,7 @@ $callback = function ($message) {
         session_start();
         $_SESSION['user_id'] = $response['user_info']['user_id'];
         $_SESSION['username'] = $response['user_info']['username'];
+        $_SESSION['email'] = $response['user_info']['email'];
         $_SESSION['fav_genre'] = $response['user_info']['fav_genre'];
         $_SESSION['movies'] = $response['movies'];
         $_SESSION['bookmarks'] = $response['bookmarks'];
@@ -61,13 +62,13 @@ $callback = function ($message) {
         exit();
     } else {
         echo "<script>
-        var confirmation = confirm('Incorrect username or password. Please try again.');
-        if (confirmation) {
-            window.location.href = 'signin.php';
-        } else {
-            window.location.href = 'index.php';
-        }
-        </script>";
+              var confirmation = confirm('Incorrect username or password. Please try again.');
+              if (confirmation) {
+                window.location.href = 'signin.php';
+              } else {
+                window.location.href = 'signin.php';
+              }
+              </script>";
         $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
         exit();
     }

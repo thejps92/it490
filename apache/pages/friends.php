@@ -1,9 +1,7 @@
 <?php
 session_start();
-if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'])) {
+if (isset($_SESSION['user_id'])) {
 	$user_id = $_SESSION['user_id'];
-	$username = $_SESSION['username'];
-	$fav_genre = $_SESSION['fav_genre'];
 	$friends = $_SESSION['friends'];
 	$outgoing_friend_requests = $_SESSION['outgoing_friend_requests'];
 	$incoming_friend_requests = $_SESSION['incoming_friend_requests'];
@@ -81,7 +79,7 @@ if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'])) 
 		    }
 		    echo "</table>";
 		} else {
-			echo "<p>No outgoing friend requests found</p>";
+			echo "<p>No outgoing friend requests found.</p>";
 		}
 		?>
 	</section>
@@ -100,7 +98,7 @@ if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'])) 
 		    }
 		    echo "</table>";
 		} else {
-			echo "<p>No incoming friend requests found</p>";
+			echo "<p>No incoming friend requests found.</p>";
 		}
 		?>
 	</section>
@@ -128,9 +126,9 @@ if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'])) 
             })
             .then(response => {
                 if (response.status === 200) {
-                    alert('Friend request deleted');
+                    alert('Friend request deleted.');
                 } else if (response.status === 400) {
-                    alert('Deleting friend request failed')
+                    alert('Deleting friend request failed.')
                 }
             })
             .catch(error => {
@@ -156,9 +154,9 @@ if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'])) 
             })
             .then(response => {
                 if (response.status === 200) {
-                    alert('Friend request accepted');
+                    alert('Friend request accepted.');
                 } else if (response.status === 400) {
-                    alert('Accepting friend request failed')
+                    alert('Accepting friend request failed.')
                 }
             })
             .catch(error => {
@@ -184,9 +182,9 @@ if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'])) 
             })
             .then(response => {
                 if (response.status === 200) {
-                    alert('Friend request declined');
+                    alert('Friend request declined.');
                 } else if (response.status === 400) {
-                    alert('Declining friend request failed')
+                    alert('Declining friend request failed.')
                 }
             })
             .catch(error => {
@@ -212,9 +210,9 @@ if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'])) 
             })
             .then(response => {
                 if (response.status === 200) {
-                    alert('Friend removed');
+                    alert('Friend removed.');
                 } else if (response.status === 400) {
-                    alert('Removing friend failed')
+                    alert('Removing friend failed.')
                 }
             })
             .catch(error => {

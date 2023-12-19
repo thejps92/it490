@@ -17,7 +17,6 @@ $mysqlIP = '127.0.0.1';
 $mysqlUsername = 'root';
 $mysqlPassword = 'root';
 $mysqlDatabase = 'newdb';
-$mysqlTable = 'users';
 
 // Establish RabbitMQ connection
 $connection = new AMQPStreamConnection($rabbitmqIP, $rabbitmqPort, $rabbitmqUsername, $rabbitmqPassword, $rabbitmqVHost);
@@ -26,32 +25,70 @@ $channel->queue_declare($rabbitmqMainQueue, false, true, false, false);
 echo "Waiting for messages. To exit, press Ctrl+C\n";
 
 // Callback function
-$callback = function ($message) use ($channel, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable) {
+$callback = function ($message) use ($channel, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase) {
     $signupData = json_decode($message->body, true);
     
-    // Set the username and password variables
-    if (isset($signupData['username'], $signupData['password'], $signupData['fav_genre'])) {
+    // Set the username, password, email, and fav_genre variables
+    if (isset($signupData['username'], $signupData['password'], $signupData['email'], $signupData['fav_genre'])) {
         $username = $signupData['username'];
         $password = $signupData['password'];
+        $email = $signupData['email'];
         $fav_genre = $signupData['fav_genre'];
-        
-        // Check if the username already exists in the database
-        if (checkUser($username, $password, $fav_genre, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable)) {
-            $response = [
-                "status" => "BAD"
-            ];
-            $badMessage = new AMQPMessage(json_encode($response));
-            $channel->basic_publish($badMessage, '', $message->get('reply_to'));
-            echo "User $username already exists\n";
-            $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
-        } else {
+
+        // Check all variations of the username and email
+        $checkUsername = checkUsername($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
+        $checkEmail = checkEmail($email, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
+        $validateEmail = validateEmail($email);
+
+        if ($checkUsername === false && $checkEmail === false && $validateEmail === true) {
+            insertUser($username, $password, $email, $fav_genre, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
             $response = [
                 "status" => "GOOD"
             ];
-            $goodMessage = new AMQPMessage(json_encode($response));
-            $channel->basic_publish($goodMessage, '', $message->get('reply_to'));
+            $replyMessage = new AMQPMessage(json_encode($response));
+            $channel->basic_publish($replyMessage, '', $message->get('reply_to'));
             $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
-            echo "User $username successfully created\n";
+            echo "User $username created\n";
+        } elseif ($checkUsername === true && $checkEmail === false && $validateEmail === true) {
+            $response = [
+                "status" => "Duplicate username"
+            ];
+            $replyMessage = new AMQPMessage(json_encode($response));
+            $channel->basic_publish($replyMessage, '', $message->get('reply_to'));
+            $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
+            echo "User $username already exists\n";
+        } elseif ($checkUsername === false && $checkEmail === true && $validateEmail === true) {
+            $response = [
+                "status" => "Duplicate email"
+            ];
+            $replyMessage = new AMQPMessage(json_encode($response));
+            $channel->basic_publish($replyMessage, '', $message->get('reply_to'));
+            $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
+            echo "Email $email already exists\n";
+        } elseif ($checkUsername === false && $checkEmail === false && $validateEmail === false) {
+            $response = [
+                "status" => "Invalid email"
+            ];
+            $replyMessage = new AMQPMessage(json_encode($response));
+            $channel->basic_publish($replyMessage, '', $message->get('reply_to'));
+            $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
+            echo "Email $email is invalid\n";
+        } elseif ($checkUsername === true && $checkEmail === true && $validateEmail === true) {
+            $response = [
+                "status" => "Duplicate username and email"
+            ];
+            $replyMessage = new AMQPMessage(json_encode($response));
+            $channel->basic_publish($replyMessage, '', $message->get('reply_to'));
+            $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
+            echo "User $username and email $email already exist\n";
+        } elseif ($checkUsername === true && $checkEmail === false && $validateEmail === false) {
+            $response = [
+                "status" => "Duplicate username and invalid email"
+            ];
+            $replyMessage = new AMQPMessage(json_encode($response));
+            $channel->basic_publish($replyMessage, '', $message->get('reply_to'));
+            $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
+            echo "User $username already exists and email $email is invalid\n";
         }
     }
 };
@@ -72,7 +109,7 @@ $mysqli->close();
 // Database functions
 
 // Check username function
-function checkUser($username, $password, $fav_genre, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlTable) {
+function checkUsername($username, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase) {
     // Establish MySQL connection
     $mysqli = new mysqli($mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
     
@@ -81,29 +118,77 @@ function checkUser($username, $password, $fav_genre, $mysqlIP, $mysqlUsername, $
     }
 
     // Prepare a statement to check if the username exists
-    $query = "SELECT * FROM $mysqlTable WHERE username = ?";
+    $query = "SELECT * FROM users WHERE username = ?";
     $stmt = $mysqli->prepare($query);
     $stmt->bind_param("s", $username);
     $stmt->execute();
     $result = $stmt->get_result();
     
-    // If the username exists return true, else insert the user into the users table and return false
+    // If the username exists return true, else return false
     if ($result->num_rows > 0) {
         $stmt->close();
         $mysqli->close();
         return true;
     } else {
         $stmt->close();
-        
-        // Prepare a statement to insert the user with a hashed password
-        $insertQuery = "INSERT INTO $mysqlTable (username, password, fav_genre) VALUES (?, ?, ?)";
-        $insertStmt = $mysqli->prepare($insertQuery);
-        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        $insertStmt->bind_param("sss", $username, $hashedPassword, $fav_genre);
-        $insertStmt->execute();
-        $insertStmt->close();
         $mysqli->close();
         return false;
     }
+}
+
+// Check email function
+function checkEmail($email, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase) {
+    // Establish MySQL connection
+    $mysqli = new mysqli($mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
+
+    if ($mysqli->connect_error) {
+        die("Connection to MySQL failed: " . $mysqli->connect_error);
+    }
+
+    // Prepare a statement to check if the email exists
+    $query = "SELECT * FROM users WHERE email = ?";
+    $stmt = $mysqli->prepare($query);
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    // If the email exists return true, else return false
+    if ($result->num_rows > 0) {
+        $stmt->close();
+        $mysqli->close();
+        return true;
+    } else {
+        $stmt->close();
+        $mysqli->close();
+        return false;
+    }
+}
+
+// Validate email function
+function validateEmail($email) {
+    if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+// Insert user function
+function insertUser($username, $password, $email, $fav_genre, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase) {
+    // Establish MySQL connection
+    $mysqli = new mysqli($mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
+
+    if ($mysqli->connect_error) {
+        die("Connection to MySQL failed: " . $mysqli->connect_error);
+    }
+
+    // Prepare a statement to insert the user with a hashed password
+    $query = "INSERT INTO users (username, password, email, fav_genre) VALUES (?, ?, ?, ?)";
+    $stmt = $mysqli->prepare($query);
+    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+    $stmt->bind_param("ssss", $username, $hashedPassword, $email, $fav_genre);
+    $stmt->execute();
+    $stmt->close();
+    $mysqli->close();
 }
 ?>

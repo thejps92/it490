@@ -16,12 +16,14 @@ $rabbitmqReplyQueue = 'replySignUpQueue';
 // Data from the form
 $username = $_POST['username'];
 $password = $_POST['password'];
+$email = $_POST['email'];
 $fav_genre = $_POST['fav_genre'];
 
 // Create an associative array with the data
 $signupData = array(
     'username' => $username,
     'password' => $password,
+    'email' => $email,
     'fav_genre' => $fav_genre
 );
 
@@ -51,15 +53,59 @@ $callback = function ($message) use ($username) {
         header('Location: signin.php');
         $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
         exit();
-    } else {
+    } elseif ($response['status'] === 'Duplicate username') {
         echo "<script>
-        var confirmation = confirm('Username already exists. Please try again.');
-        if (confirmation) {
-            window.location.href = 'signup.php';
-        } else {
-            window.location.href = 'index.php';
-        }
-        </script>";
+              var confirmation = confirm('Username already exists. Please try again.');
+              if (confirmation) {
+                window.location.href = 'signup.php';
+              } else {
+                window.location.href = 'signup.php';
+              }
+              </script>";
+        $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
+        exit();
+    } elseif ($response['status'] === 'Duplicate email') {
+        echo "<script>
+              var confirmation = confirm('Email already exists. Please try again.');
+              if (confirmation) {
+                window.location.href = 'signup.php';
+              } else {
+                window.location.href = 'signup.php';
+              }
+              </script>";
+        $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
+        exit();
+    } elseif ($response['status'] === 'Invalid email') {
+        echo "<script>
+              var confirmation = confirm('Email is invalid. Please try again.');
+              if (confirmation) {
+                window.location.href = 'signup.php';
+              } else {
+                window.location.href = 'signup.php';
+              }
+              </script>";
+        $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
+        exit();
+    } elseif ($response['status'] === 'Duplicate username and email') {
+        echo "<script>
+              var confirmation = confirm('Username and email already exist. Please try again.');
+              if (confirmation) {
+                window.location.href = 'signup.php';
+              } else {
+                window.location.href = 'signup.php';
+              }
+              </script>";
+        $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
+        exit();
+    } elseif ($response['status'] === 'Duplicate username and invalid email') {
+        echo "<script>
+              var confirmation = confirm('Username already exists and email is invalid. Please try again.');
+              if (confirmation) {
+                window.location.href = 'signup.php';
+              } else {
+                window.location.href = 'signup.php';
+              }
+              </script>";
         $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
         exit();
     }
