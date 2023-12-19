@@ -30,8 +30,8 @@ echo "Waiting for messages. To exit, press Ctrl+C\n";
 $callback = function ($message) use ($channel, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlMoviesTable, $mysqlBookmarksTable) {
     $bookmarkData = json_decode($message->body, true);
     
-    // Set the user_id and movie_id variables
-    if (isset($bookmarkData['user_id'], $bookmarkData['movie_id'])) {
+    // Set the user_id and movie_id variables if they are set and action is not set otherwise set the action, user_id, and movie_id variables if they are set
+    if (isset($bookmarkData['user_id'], $bookmarkData['movie_id']) && !isset($bookmarkData['action'])) {
         $user_id = $bookmarkData['user_id'];
         $movie_id = $bookmarkData['movie_id'];
         
@@ -54,6 +54,31 @@ $callback = function ($message) use ($channel, $mysqlIP, $mysqlUsername, $mysqlP
             $badMessage = new AMQPMessage(json_encode($response));
             $channel->basic_publish($badMessage, '', $message->get('reply_to'));
             echo "Bookmark already exists" . "\n";
+            $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
+        }
+    } elseif (isset($bookmarkData['action'], $bookmarkData['user_id'], $bookmarkData['movie_id'])) {
+        $action = $bookmarkData['action'];
+        $user_id = $bookmarkData['user_id'];
+        $movie_id = $bookmarkData['movie_id'];
+
+        if ($action === 'remove') {
+            deleteBookmark($user_id, $movie_id, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlBookmarksTable);
+            $bookmarks = getUserBookmarks($user_id, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlMoviesTable);
+            $response = [
+                "status" => "GOOD",
+                "bookmarks" => $bookmarks
+            ];
+            $goodMessage = new AMQPMessage(json_encode($response));
+            $channel->basic_publish($goodMessage, '', $message->get('reply_to'));
+            echo "Bookmark removed for User ID: $user_id, Movie ID: $movie_id\n";
+            $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
+        } else {
+            $response = [
+                "status" => "BAD"
+            ];
+            $badMessage = new AMQPMessage(json_encode($response));
+            $channel->basic_publish($badMessage, '', $message->get('reply_to'));
+            echo "Bookmark action failed" . "\n";
             $message->delivery_info['channel']->basic_ack($message->delivery_info['delivery_tag']);
         }
     }
@@ -112,6 +137,24 @@ function insertBookmark($user_id, $movie_id, $mysqlIP, $mysqlUsername, $mysqlPas
 
     // Prepare a statement to insert the new bookmark into the bookmarks table
     $query = "INSERT INTO $mysqlBookmarksTable (user_id, movie_id) VALUES (?, ?)";
+    $stmt = $mysqli->prepare($query);
+    $stmt->bind_param("ii", $user_id, $movie_id);
+    $stmt->execute();
+    $stmt->close();
+    $mysqli->close();
+}
+
+// Delete bookmark function
+function deleteBookmark($user_id, $movie_id, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase, $mysqlBookmarksTable) {
+    // Establish MySQL connection
+    $mysqli = new mysqli($mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
+
+    if ($mysqli->connect_error) {
+        die("Connection to MySQL failed: " . $mysqli->connect_error);
+    }
+
+    // Prepare a statement to delete the bookmark from the bookmarks table
+    $query = "DELETE FROM $mysqlBookmarksTable WHERE user_id = ? AND movie_id = ?";
     $stmt = $mysqli->prepare($query);
     $stmt->bind_param("ii", $user_id, $movie_id);
     $stmt->execute();

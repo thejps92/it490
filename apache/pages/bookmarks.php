@@ -42,6 +42,7 @@ if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'])) 
 		        echo "<td>" . $bookmark['title'] . "</td>";
 		        echo "<td>" . $bookmark['year'] . "</td>";
 		        echo "<td>" . $bookmark['genre'] . "</td>";
+				echo "<td> <button class='remove' action='remove' userid='" . $user_id . "' movieid='" . $bookmark['movie_id'] . "'>Remove</button> </td>";
 		        echo "</tr>";
 		    }
 		    echo "</table>";
@@ -51,6 +52,40 @@ if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'])) 
 		?>
 	</section>
 	</main>
+
+	<script>
+    document.addEventListener('click', function (event) {
+        if (event.target && event.target.className === 'remove') {
+			const action = event.target.getAttribute('action');
+            const userId = event.target.getAttribute('userid');
+            const movieId = event.target.getAttribute('movieid');
+            const data = {
+				action: action,
+                user_id: userId,
+                movie_id: movieId
+            };
+            const jsonData = JSON.stringify(data);
+
+            fetch('publish_bookmark.php', {
+                method: 'POST',
+                body: jsonData,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.status === 200) {
+                    alert('Bookmark removed');
+                } else if (response.status === 400 || response.status === 401) {
+                    alert('Removing bookmark failed')
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+		}
+	});
+	</script>
 
 	<footer>
 	   <form method="post" action="publish_signout.php">

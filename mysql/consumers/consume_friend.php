@@ -136,9 +136,9 @@ function deleteFriendRequest($sender_id, $receiver_id, $mysqlIP, $mysqlUsername,
     }
 
     // Prepare a statement to delete the friend request from the friend requests table
-    $query = "DELETE FROM friend_requests WHERE sender_id = ? AND receiver_id = ?";
+    $query = "DELETE FROM friend_requests WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)";
     $stmt = $mysqli->prepare($query);
-    $stmt->bind_param("ii", $sender_id, $receiver_id);
+    $stmt->bind_param("iiii", $sender_id, $receiver_id, $receiver_id, $sender_id);
     $stmt->execute();
     $stmt->close();
     $mysqli->close();

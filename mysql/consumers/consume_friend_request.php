@@ -81,7 +81,7 @@ $connection->close();
 
 // Database functions
 
-// Check bookmark function
+// Check friend request function
 function checkFriendRequest($sender_id, $receiver_id, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase) {
     // Establish MySQL connection
     $mysqli = new mysqli($mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
@@ -91,9 +91,9 @@ function checkFriendRequest($sender_id, $receiver_id, $mysqlIP, $mysqlUsername, 
     }
 
     // Prepare a statement to check if the friend request already exists in the friend requests table
-    $query = "SELECT * FROM friend_requests WHERE sender_id = ? AND receiver_id = ?";
+    $query = "SELECT * FROM friend_requests WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)";
     $stmt = $mysqli->prepare($query);
-    $stmt->bind_param("ii", $sender_id, $receiver_id);
+    $stmt->bind_param("iiii", $sender_id, $receiver_id, $receiver_id, $sender_id);
     $stmt->execute();
     $result = $stmt->get_result();
 
@@ -118,10 +118,10 @@ function checkFriend($sender_id, $receiver_id, $mysqlIP, $mysqlUsername, $mysqlP
         die("Connection to MySQL failed: " . $mysqli->connect_error);
     }
 
-    // Prepare a statement to check if the friend request already exists in the friend requests table
-    $query = "SELECT * FROM friends WHERE user1_id = ? AND user2_id = ?";
+    // Prepare a statement to check if the friend already exists in the friends table
+    $query = "SELECT * FROM friends WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)";
     $stmt = $mysqli->prepare($query);
-    $stmt->bind_param("ii", $sender_id, $receiver_id);
+    $stmt->bind_param("iiii", $sender_id, $receiver_id, $receiver_id, $sender_id);
     $stmt->execute();
     $result = $stmt->get_result();
 
