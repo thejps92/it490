@@ -28,6 +28,13 @@
 	  height: 100vh; /* Adjust height as needed */
 	  flex-direction: column;
 	}
+
+	/* Center the search bar */
+        .search-container {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 20px;
+        }
   </style>
 </head>
 <body>
@@ -97,7 +104,7 @@
 			const response = await fetch('https://api.themoviedb.org/3/genre/movie/list?language=en-US', {
 			  method: 'GET',
 			  headers: {
-				'Authorization': 'Bearer YOUR_TMDB_API_KEY',
+				'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJlOThkYTBjNGQxMjM3MDE5OWEzNGQ1YTdjY2M5MWMyOCIsInN1YiI6IjY1NGFjMmRkNjdiNjEzMDEwMmUxM2U2YiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.ZHkeqy2Qtw8tZmaxeWU-fKeCC5eY7XAWuaX-i-nOC00',
 				'accept': 'application/json'
 			  }
 			});
