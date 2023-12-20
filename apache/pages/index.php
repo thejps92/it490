@@ -130,13 +130,14 @@
 				const movieElement = document.createElement('div');
 				movieElement.classList.add('movie');
 
-				if (movie.backdrop_path) {
-				  const backdropUrl = `https://image.tmdb.org/t/p/w300${movie.backdrop_path}`;
-				  const backdropImage = document.createElement('img');
-				  backdropImage.src = backdropUrl;
-				  backdropImage.alt = `${movie.title} backdrop`;
-				  movieElement.appendChild(backdropImage);
-				}
+				if (movie.poster_path) {
+                            const posterUrl = `https://image.tmdb.org/t/p/w300${movie.poster_path}`;
+                            const posterImage = document.createElement('img');
+                            posterImage.src = posterUrl;
+                            posterImage.alt = `${movie.title} poster`;
+                            posterImage.classList.add('img-fluid');
+                            movieElement.appendChild(posterImage);
+                        }
 
 				const movieDetails = document.createElement('div');
 				const movieGenres = movie.genre_ids.map(genreId => {
