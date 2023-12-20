@@ -1,9 +1,7 @@
 <?php
 session_start();
-if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'], $_SESSION['movies'])) {
+if (isset($_SESSION['user_id'])) {
 	$user_id = $_SESSION['user_id'];
-	$username = $_SESSION['username'];
-	$fav_genre = $_SESSION['fav_genre'];
 	$movies = $_SESSION['movies'];
 } else {
     header('Location: signin.php');
@@ -30,7 +28,7 @@ if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'], $
 		<a class="navbar-brand text-white">490Central</a>
 			<div class="collapse navbar-collapse" id="navbarNavAltMarkup">
 			<div class="navbar-nav">
-				<a class="nav-item nav-link active text-white" href="index.php">Home <span class="sr-only">(current)</span></a>
+				<a class="nav-item nav-link text-white" href="index.php">Home <span class="sr-only">(current)</span></a>
 				<a class="nav-item nav-link text-white" href="recommendations.php">Recommendations</a>
 				<a class="nav-item nav-link text-white" href="profile.php">Profile</a>
 				<a class="nav-item nav-link text-white" href="bookmarks.php">Bookmarks</a>
@@ -43,15 +41,24 @@ if (isset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['fav_genre'], $
 
 	<main>
 	<section>
-	<br>
+<section>
 		<h2>Recommendations</h2>
-		<ul>
-            <?php
-            foreach ($movies as $movie) {
-                echo '<li>' . $movie['title'] . ' - ' . $movie['year'] . ' - ' . $movie['genre'] . '</li>';
-            }
-            ?>
-        </ul>
+		<?php
+		if (!empty($movies)) {
+			echo '<table>';
+			echo '<tr><th>Title</th><th>Year</th><th>Genre</th></tr>';
+			foreach ($movies as $movie) {
+				echo '<tr>';
+				echo '<td>' . $movie['title'] . '</td>';
+				echo '<td>' . $movie['year'] . '</td>';
+				echo '<td>' . $movie['genre'] . '</td>';
+				echo '</tr>';
+			}
+			echo '</table>';
+		} else {
+			echo '<p>No recommended movies available.</p>';
+		}
+		?>
 	</section>
 	</main>
 
