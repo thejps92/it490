@@ -3,6 +3,8 @@
 require_once __DIR__ . '/vendor/autoload.php';
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
 // RabbitMQ connection parameters
 $rabbitmqIP = '10.147.18.28';
@@ -42,6 +44,7 @@ $callback = function ($message) use ($channel, $mysqlIP, $mysqlUsername, $mysqlP
 
         if ($checkUsername === false && $checkEmail === false && $validateEmail === true) {
             insertUser($username, $password, $email, $fav_genre, $mysqlIP, $mysqlUsername, $mysqlPassword, $mysqlDatabase);
+            sendEmail($username, $email);
             $response = [
                 "status" => "GOOD"
             ];
@@ -190,5 +193,29 @@ function insertUser($username, $password, $email, $fav_genre, $mysqlIP, $mysqlUs
     $stmt->execute();
     $stmt->close();
     $mysqli->close();
+}
+
+// Send email function
+function sendEmail($username, $email) {
+    $mail = new PHPMailer(true);
+
+    try {
+        $mail->isSMTP();
+        $mail->Host = 'smtp.gmail.com';
+        $mail->SMTPAuth = true;
+        $mail->Username = 'REPLACE_WITH_EMAIL';
+        $mail->Password = 'REPLACE_WITH_APP_PASSWORD';
+        $mail->SMTPSecure = 'tls';
+        $mail->Port = '587';
+
+        $mail->addAddress($email);
+        $mail->Subject = "Welcome $username to www.example.com!";
+        $mail->Body = "$username,\n\nThis email is to confirm the creation of your account on www.example.com.";
+        $mail->send();
+
+        echo "Email sent.";
+    } catch (Exception $e) {
+        echo "Email failed. Mailer error: {$mail->ErrorInfo}";
+    }
 }
 ?>
