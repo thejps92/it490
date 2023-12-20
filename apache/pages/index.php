@@ -2,10 +2,8 @@
 <html>
 <head>
     <title>Home</title>
-	
 	<meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-	
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 	
 	<style>
@@ -25,16 +23,15 @@
 	  display: flex;
 	  justify-content: center;
 	  align-items: center;
-	  height: 100vh; /* Adjust height as needed */
+	  height: 100vh;
 	  flex-direction: column;
 	}
 
-	/* Center the search bar */
-        .search-container {
-          display: flex;
-          justify-content: center;
-          margin-bottom: 20px;
-        }
+	.search-container {
+		display: flex;
+		justify-content: center;
+		margin-bottom: 20px;
+	}
   </style>
 </head>
 <body>
@@ -60,7 +57,7 @@
 		<div class="container mt-3">
 			<div class="row">
 				<div class="col-12 text-center">
-					<h2>Popular Movies</h2>
+					<h2>Search Movies</h2>
 				</div>
 			</div>
 		</div>
@@ -68,7 +65,7 @@
         <section>
             <div class="container mt-3">
                 <div class="row">
-                    <div class="col-md-6 offset-md-3">
+                    <div class="col-md-6 offset-md-3 search-container">
                         <form class="form-inline my-2 my-lg-0" method="post" action="publish_search.php">
                             <div class="input-group">
                                 <input class="form-control" type="text" name="searchQuery" placeholder="Search movies...">
@@ -85,6 +82,16 @@
                     </div>
                 </div>
             </div>
+        </section>
+
+		<section>
+		<div class="container mt-3">
+			<div class="row">
+				<div class="col-12 text-center">
+					<h2>Popular Movies</h2>
+				</div>
+			</div>
+		</div>
         </section>
 		<section>
 			<div class="container mt-3">
